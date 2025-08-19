@@ -5,23 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Аналитика бездоговорного подвеса ВОЛС — Россети Кубань</title>
 
-  <!-- Шрифты -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
 
-  <!-- Стили -->
   <style>
     :root{
       --rs-blue:#0033A0; --rs-blue-2:#0A47C6; --rs-bg:#F5F7FB; --rs-text:#101828;
       --rs-muted:#667085; --border:#E5E7EB; --ok:#2E7D32; --bad:#C62828; --warn:#ED6C02;
-      --card:#fff; --accent:#00AEEF;
+      --card:#fff;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:var(--rs-bg);color:var(--rs-text);font-family:Montserrat,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-    header{
-      background:linear-gradient(90deg,var(--rs-blue) 0%, var(--rs-blue-2) 100%);
-      color:#fff; padding:16px; position:sticky; top:0; z-index:50; box-shadow:0 2px 12px rgba(0,0,0,.12)
-    }
+    html,body{margin:0;padding:0;background:var(--rs-bg);color:var(--rs-text);font-family:Montserrat,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+    header{background:linear-gradient(90deg,var(--rs-blue),var(--rs-blue-2));color:#fff;padding:16px;position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,.12)}
     .wrap{max-width:1200px;margin:0 auto}
     .brand{display:flex;align-items:center;gap:12px}
     .logo{width:40px;height:40px;border-radius:50%;background:#fff;display:grid;place-items:center;color:var(--rs-blue);font-weight:900}
@@ -30,7 +25,7 @@
     .grid{display:grid;gap:16px}
     @media(min-width:980px){ .grid-2{grid-template-columns:1fr 1fr} }
     .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 4px 16px rgba(0,0,0,.04)}
-    .card h2{margin:0 0 10px 0;font-size:18px}
+    .card h2{margin:0 0 10px;font-size:18px}
     .muted{color:var(--rs-muted)} .small{font-size:12px}
     .u-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
     .btn{appearance:none;border:none;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer;background:var(--rs-blue);color:#fff}
@@ -39,20 +34,20 @@
     input[type=file]{padding:10px;background:#fff;border:1px dashed var(--border);border-radius:12px;width:100%}
     .kpi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
     .tile{background:#fff;border:1px solid var(--border);border-radius:16px;padding:14px}
-    .tile h3{margin:0 0 6px 0;font-size:14px;color:var(--rs-muted)}
+    .tile h3{margin:0 0 6px;font-size:14px;color:var(--rs-muted)}
     .tile .v{font-size:22px;font-weight:800}
     table{width:100%;border-collapse:collapse;font-size:14px}
     thead th{position:sticky;top:0;background:#F2F6FF;border-bottom:2px solid var(--border)}
     th,td{padding:8px;border-bottom:1px solid var(--border);text-align:right}
-    th:first-child, td:first-child{text-align:left}
+    th:first-child,td:first-child{text-align:left}
     tfoot td{font-weight:800;background:#FAFAFC}
-    .delta.pos{color:var(--ok)} .delta.neg{color:var(--bad)}
+    .delta.pos{color:#2E7D32}.delta.neg{color:#C62828}
     .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px}
-    .ok{background:#E8F5E9;color:var(--ok)} .warn{background:#FFF3E0;color:var(--warn)} .bad{background:#FFEBEE;color:var(--bad)}
+    .ok{background:#E8F5E9;color:#2E7D32}.warn{background:#FFF3E0;color:#ED6C02}.bad{background:#FFEBEE;color:#C62828}
     .fit{width:100%;overflow:auto}
     canvas{background:#fff;border:1px solid var(--border);border-radius:16px;padding:8px}
     .footer-actions{display:flex;flex-wrap:wrap;gap:10px}
-    .hr{height:1px;background:var(--border);margin:10px 0 16px 0}
+    .hr{height:1px;background:var(--border);margin:10px 0 16px}
 
     /* Прогресс + лог */
     .progress{display:flex;align-items:center;gap:12px}
@@ -60,13 +55,11 @@
     .bar>span{display:block;height:100%;width:0;background:linear-gradient(90deg,#69A1FF,#0033A0)}
     .status{min-width:250px;font-size:12px;color:#123}
     .log{background:#0E1116;color:#D6E2FF;border-radius:12px;padding:12px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;max-height:220px;overflow:auto;border:1px solid #1E2633}
-    .log .err{color:#FFB4B4}
-    .log .warn{color:#FFD28A}
+    .log .err{color:#FFB4B4}.log .warn{color:#FFD28A}
     .sticky-controls{position:sticky;bottom:12px;z-index:40}
   </style>
 
-  <!-- Библиотеки: ВСЕ с defer, чтобы грузились до нашего кода, но не блокировали рендер -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.min.js" defer></script>
+  <!-- Остальные библиотеки грузим обычным образом -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.min.js" defer></script>
@@ -86,10 +79,9 @@
   </header>
 
   <main class="wrap grid">
-    <!-- Загрузка -->
     <section class="card">
       <h2>1) Загрузка отчётов (PDF)</h2>
-      <p class="muted small">Загрузите <b>текущий</b> и <b>предыдущий</b> отчёты (страницы 2–4 обязательны). Встроены лог, прогресс и автопочинка pdf.js при проблемах с воркером.</p>
+      <p class="muted small">Загрузите <b>текущий</b> и <b>предыдущий</b> отчёты (стр. 2–4). Есть лог, прогресс и автоподгрузка pdf.js с 3 CDN.</p>
       <div class="grid grid-2">
         <div>
           <label class="small">Текущий отчёт (например, 15.08.2025)</label>
@@ -117,38 +109,33 @@
       <div class="log" id="log"></div>
     </section>
 
-    <!-- KPI -->
     <section class="card">
       <h2>2) Итоги по обществу</h2>
       <div class="kpi" id="kpi"></div>
-      <p class="small muted">«Выявлено» = разница «В работе всего, шт» между текущим и предыдущим отчётами (стр. 2, строка «Общий итог»).</p>
+      <p class="small muted">«Выявлено» = разница «В работе всего, шт» (стр. 2, «Общий итог») текущий − предыдущий.</p>
     </section>
 
-    <!-- Страница 2 -->
     <section class="card">
-      <h2>3) Страница 2 — Стадии оформления (по филиалам)</h2>
+      <h2>3) Страница 2 — Стадии оформления</h2>
       <div id="p2Tables" class="fit"></div>
       <div class="hr"></div>
       <canvas id="p2Chart" height="120"></canvas>
     </section>
 
-    <!-- Страница 3 -->
     <section class="card">
-      <h2>4) Страница 3 — Приказ №425 (по филиалам)</h2>
+      <h2>4) Страница 3 — Приказ №425</h2>
       <div id="p3Tables" class="fit"></div>
       <div class="hr"></div>
       <canvas id="p3Chart" height="120"></canvas>
     </section>
 
-    <!-- Страница 4 -->
     <section class="card">
-      <h2>5) Страница 4 — ПАО «Ростелеком» (по филиалам)</h2>
+      <h2>5) Страница 4 — ПАО «Ростелеком»</h2>
       <div id="p4Tables" class="fit"></div>
       <div class="hr"></div>
       <canvas id="p4Chart" height="120"></canvas>
     </section>
 
-    <!-- Выгрузки -->
     <section class="card">
       <h2>6) Выгрузки</h2>
       <div class="footer-actions">
@@ -160,548 +147,381 @@
     </section>
   </main>
 
-<!-- ВАШ ОСНОВНОЙ КОД: defer + запуск только после полной загрузки -->
-<script defer>
-window.addEventListener("load", function(){
-  /* ============================== ЛОГИ и ГЛОБАЛЬНЫЕ ЛОВУШКИ ============================== */
-  const $ = s => document.querySelector(s);
-  function log(msg, type="info"){
-    const el = $("#log");
-    const time = new Date().toLocaleTimeString('ru-RU');
-    const line = document.createElement("div");
-    if(type==="error") line.classList.add("err");
-    if(type==="warn")  line.classList.add("warn");
-    line.textContent = `[${time}] ${msg}`;
-    el.appendChild(line);
-    el.scrollTop = el.scrollHeight;
-    console[type==="error"?"error":type==="warn"?"warn":"log"](msg);
-  }
-  window.onerror = function(message, source, lineno, colno, error){
-    log(`JS Error: ${message} at ${source}:${lineno}:${colno}`, "error");
-  };
-  window.onunhandledrejection = function(e){
-    log(`Unhandled Promise Rejection: ${e.reason?.message || e.reason || e}`, "error");
-  };
+<script>
+/* ================== ЛОГ/СТАТУС/ПРОГРЕСС ================== */
+const $ = s => document.querySelector(s);
+function log(msg, type="info"){
+  const el = $("#log");
+  const time = new Date().toLocaleTimeString('ru-RU');
+  const line = document.createElement("div");
+  if(type==="error") line.classList.add("err");
+  if(type==="warn")  line.classList.add("warn");
+  line.textContent = `[${time}] ${msg}`;
+  el.appendChild(line); el.scrollTop = el.scrollHeight;
+  console[type==="error"?"error":type==="warn"?"warn":"log"](msg);
+}
+function setStatus(text){ $("#status").textContent = text; }
+function setBar(p){ $("#bar").style.width = Math.max(0, Math.min(100, p)) + "%"; }
+window.onerror = (m,s,l,c,e)=>log(`JS Error: ${m} at ${s}:${l}:${c}`,"error");
+window.onunhandledrejection = e=>log(`Unhandled Rejection: ${e.reason?.message||e.reason||e}`,"error");
 
-  /* ============================== ПРОГРЕСС ============================== */
-  function setStatus(text){ $("#status").textContent = text; }
-  function setBar(p){ $("#bar").style.width = Math.max(0, Math.min(100, p)) + "%"; }
+/* ============== ДИН. ЗАГРУЗКА pdf.js С НЕСКОЛЬКИХ CDN ============== */
+const PDFJS_URLS = [
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.min.js",
+  "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.3.136/build/pdf.min.js",
+  "https://unpkg.com/pdfjs-dist@4.3.136/build/pdf.min.js"
+];
+const PDFJS_WORKER_URLS = [
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.worker.min.js",
+  "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.3.136/build/pdf.worker.min.js",
+  "https://unpkg.com/pdfjs-dist@4.3.136/build/pdf.worker.min.js"
+];
 
-  /* ============================== Проверяем pdfjsLib ============================== */
-  if(!window.pdfjsLib){
-    log("pdfjsLib не загружен — проверьте подключение CDN.", "error");
-    setStatus("Ошибка: pdf.js не загрузился");
-    return;
-  }
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.worker.min.js";
+function loadScript(src){
+  return new Promise((resolve,reject)=>{
+    const s = document.createElement("script");
+    s.src = src; s.async = true; s.onload = resolve; s.onerror = ()=>reject(new Error(`Load failed: ${src}`));
+    document.head.appendChild(s);
+  });
+}
 
-  /* ============================== pdf.js — worker + fallback ============================== */
-  async function loadPdfWithFallback(file, label){
-    const ab = await file.arrayBuffer();
-    // 1) Обычный режим с воркером
+async function ensurePdfJs(){
+  for(let i=0;i<PDFJS_URLS.length;i++){
     try{
-      setStatus(`Загрузка ${label}: worker…`); log(`Загрузка ${label} (worker)`);
-      const task = pdfjsLib.getDocument({ data: ab });
-      const pdf = await task.promise;
-      log(`${label}: загружен (worker)`);
-      return { pdf, usedWorker:true };
-    }catch(err1){
-      log(`${label}: ошибка worker (${err1 && err1.message || err1}). Пробую disableWorker…`, "warn");
-      // 2) Fallback: без воркера
-      try{
-        const task2 = pdfjsLib.getDocument({ data: ab, disableWorker: true });
-        const pdf2 = await task2.promise;
-        log(`${label}: загружен (disableWorker)`);
-        return { pdf: pdf2, usedWorker:false };
-      }catch(err2){
-        log(`${label}: ошибка и без worker (${err2 && err2.message || err2})`, "error");
-        throw err2;
+      if(!window.pdfjsLib){ log(`Пробую загрузить pdf.js: ${PDFJS_URLS[i]}`); await loadScript(PDFJS_URLS[i]); }
+      if(window.pdfjsLib){
+        const worker = PDFJS_WORKER_URLS[i] || PDFJS_WORKER_URLS[0];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = worker;
+        log(`pdf.js загружен (${PDFJS_URLS[i].split('/')[2]}), worker: ${worker.split('/')[2]}`);
+        return true;
       }
+    }catch(err){
+      log(`Не удалось загрузить pdf.js c ${PDFJS_URLS[i]} — ${err.message}`,"warn");
     }
   }
+  log("pdfjsLib не загружен — проверьте подключение/блокировки CDN.", "error");
+  return false;
+}
 
-  /* ============================== НОРМАЛИЗАЦИЯ ============================== */
-  const FILIALS = [
-    "Сочинские ЭС","Тимашевские ЭС","Тихорецкие ЭС","Усть-Лабинские ЭС","Юго-Западные ЭС",
-    "Адыгейские ЭС","Армавирские ЭС","Краснодарские ЭС","Лабинские ЭС","Ленинградские ЭС","Славянские ЭС",
-  ];
-  const CANON_STATUSES = [
-    "Будет включено в следующее доп. соглашение после подписания",
-    "В работе у филиала",
-    "Демонтировано",
-    "Договор на оформлении Россети Цифра",
-    "Договор на подписании у оператора",
-    "Договор на согласовании в филиале",
-  ];
-  function normStr(s){
-    if(!s) return "";
-    return String(s)
-      .replace(/\u00A0/g," ")     // NBSP
-      .replace(/[‐–—−]/g,"-")     // все тире -> "-"
-      .replace(/\s+/g," ")
-      .trim();
+/* ============== Остальные утилиты/парсер (как раньше) ============== */
+const FILIALS = [
+  "Сочинские ЭС","Тимашевские ЭС","Тихорецкие ЭС","Усть-Лабинские ЭС","Юго-Западные ЭС",
+  "Адыгейские ЭС","Армавирские ЭС","Краснодарские ЭС","Лабинские ЭС","Ленинградские ЭС","Славянские ЭС",
+];
+const CANON_STATUSES = [
+  "Будет включено в следующее доп. соглашение после подписания",
+  "В работе у филиала",
+  "Демонтировано",
+  "Договор на оформлении Россети Цифра",
+  "Договор на подписании у оператора",
+  "Договор на согласовании в филиале",
+];
+
+function normStr(s){ if(!s)return ""; return String(s).replace(/\u00A0/g," ").replace(/[‐–—−]/g,"-").replace(/\s+/g," ").trim(); }
+function nfmt(v){ return (v==null || isNaN(v)) ? "—" : v.toLocaleString('ru-RU'); }
+function deltaFmt(v){ if(v==null||isNaN(v))return "—"; const cls=v>0?"pos":v<0?"neg":""; const sign=v>0?"+":""; return `<span class="delta ${cls}">${sign}${v.toLocaleString('ru-RU')}</span>`; }
+function toIntSmart(s){ if(s==null)return null; const m=String(s).replace(/\u00A0/g," ").match(/-?\d[\d\s]*\d|\d/); if(!m)return null; return parseInt(m[0].replace(/\s+/g,""),10); }
+function safeXY(item){ const t=item&&item.transform; return {x:(t&&typeof t[4]==="number")?t[4]:0, y:(t&&typeof t[5]==="number")?t[5]:0}; }
+
+async function loadPdfWithFallback(file,label){
+  const ab = await file.arrayBuffer();
+  // 1) worker
+  try{
+    setStatus(`Загрузка ${label}: worker…`); log(`Загрузка ${label} (worker)`);
+    const task = pdfjsLib.getDocument({ data: ab });
+    const pdf = await task.promise;
+    log(`${label}: загружен (worker)`); return { pdf, usedWorker:true };
+  }catch(e1){
+    log(`${label}: worker ошибка (${e1.message}). Переключаюсь на disableWorker…`,"warn");
+    const task2 = pdfjsLib.getDocument({ data: ab, disableWorker:true });
+    const pdf2 = await task2.promise;
+    log(`${label}: загружен (disableWorker)`); return { pdf: pdf2, usedWorker:false };
   }
-  function nfmt(v){ return (v==null || isNaN(v)) ? "—" : v.toLocaleString('ru-RU'); }
-  function deltaFmt(v){ if(v==null||isNaN(v))return "—"; const cls=v>0?"pos":v<0?"neg":""; const sign=v>0?"+":""; return `<span class="delta ${cls}">${sign}${v.toLocaleString('ru-RU')}</span>`; }
-  function toIntSmart(s){
-    if(s==null) return null;
-    const t = String(s).replace(/\u00A0/g," ").replace(/\s/g," ");
-    const m = t.match(/-?\d[\d\s]*\d|\d/); // первое число
-    if(!m) return null;
-    return parseInt(m[0].replace(/\s+/g,""),10);
+}
+
+async function getLinesFromPage(pdf, pageNum){
+  const page = await pdf.getPage(pageNum);
+  const text = await page.getTextContent();
+  const items = text?.items || [];
+  const sorted = items.slice().sort((a,b)=>{
+    const A=safeXY(a), B=safeXY(b);
+    if(Math.abs(B.y-A.y)>0.1) return B.y-A.y;
+    return A.x-B.x;
+  });
+  const rows=[]; const Y_TOL=2;
+  for(const it of sorted){
+    const {x,y}=safeXY(it); const s=normStr(it.str); if(!s) continue;
+    let row = rows.find(r=>Math.abs(r.y-y)<=Y_TOL); if(!row){row={y,parts:[]}; rows.push(row);}
+    row.parts.push({x,s});
   }
-  function safeXY(item){
-    const tr = item && item.transform;
-    const x = (tr && typeof tr[4]==="number") ? tr[4] : 0;
-    const y = (tr && typeof tr[5]==="number") ? tr[5] : 0;
-    return {x,y};
+  return rows.map(r=>normStr(r.parts.sort((a,b)=>a.x-b.x).map(p=>p.s).join(" "))).filter(Boolean);
+}
+
+function ensureTotalsIfMissing(parsed){
+  for(const [k,v] of Object.entries(parsed.filials||{})){
+    if(v.total==null){ const s=Object.values(v.statuses||{}).reduce((a,b)=>a+(+b||0),0); if(s>0) v.total=s; }
   }
+  if(parsed.overall==null){ parsed.overall = Object.values(parsed.filials||{}).reduce((a,b)=>a+(+b.total||0),0); }
+}
+function unionStatuses(d1,d2){
+  const s=new Set();
+  for(const f of Object.values(d1.filials||{})) Object.keys(f.statuses||{}).forEach(x=>s.add(x));
+  for(const f of Object.values(d2.filials||{})) Object.keys(f.statuses||{}).forEach(x=>s.add(x));
+  const ordered = CANON_STATUSES.filter(x=>s.has(x)); for(const x of s) if(!ordered.includes(x)) ordered.push(x); return ordered;
+}
+function filialRegex(f){ return new RegExp("^"+f.replace(/[-.*+?^${}()|[\]\\]/g,"\\$&")+"\\b"); }
+function canonStatus(line){
+  if(/Будет включено/i.test(line)&&/соглашение/i.test(line)) return CANON_STATUSES[0];
+  if(/В работе у филиала/i.test(line)) return CANON_STATUSES[1];
+  if(/Демон/i.test(line)) return CANON_STATUSES[2];
+  if(/на оформлении/i.test(line)) return CANON_STATUSES[3];
+  if(/на подписании/i.test(line)) return CANON_STATUSES[4];
+  if(/на согласовании/i.test(line)) return CANON_STATUSES[5];
+  return null;
+}
 
-  /* ============================== ТЕКСТ ПО СТРАНИЦЕ ============================== */
-  async function getLinesFromPage(pdf, pageNum){
-    const page = await pdf.getPage(pageNum);
-    const textContent = await page.getTextContent();
-    const items = (textContent && textContent.items) ? textContent.items : [];
-
-    // Сортируем по Y↓, X↑
-    const sorted = items.slice().sort((a,b)=>{
-      const A = safeXY(a), B = safeXY(b);
-      if (Math.abs(B.y - A.y) > 0.1) return B.y - A.y; // сверху вниз
-      return A.x - B.x;                                 // слева направо
-    });
-
-    // Группируем по строкам: допуск по Y
-    const rows = [];
-    const Y_TOL = 2; // px
-    for(const it of sorted){
-      const {x,y} = safeXY(it);
-      const s = normStr(it.str);
-      if(!s) continue;
-      let row = rows.find(r => Math.abs(r.y - y) <= Y_TOL);
-      if(!row){ row = { y, parts:[] }; rows.push(row); }
-      row.parts.push({x, s});
-    }
-    // Склеиваем части строки
-    const lines = rows.map(r=>{
-      r.parts.sort((a,b)=>a.x-b.x);
-      return normStr(r.parts.map(p=>p.s).join(" "));
-    }).filter(Boolean);
-
-    return lines;
+async function extractDate(pdf){
+  try{
+    const lines = await getLinesFromPage(pdf,1);
+    for(const line of lines){ const m=line.match(/по состоянию на\s+(\d{2}\.\d{2}\.\d{4})/i); if(m) return m[1]; }
+  }catch(e){ log(`Не удалось извлечь дату со стр.1: ${e.message}`,"warn"); }
+  return null;
+}
+async function parseFilialsOnPage(pdf,pageNum){
+  const lines = await getLinesFromPage(pdf,pageNum);
+  const data={}; let current=null;
+  for(const raw of lines){
+    const line=normStr(raw);
+    const f = FILIALS.find(name=>filialRegex(name).test(line));
+    if(f){ const total=toIntSmart(line); data[f]=data[f]||{total:null,statuses:{}}; if(!isNaN(total)) data[f].total=total; current=f; continue; }
+    if(current){ const st=canonStatus(line); if(st){ const v=toIntSmart(line); if(!isNaN(v)) data[current].statuses[st]=v; } }
   }
+  let overall=null; const totalLine = lines.find(l=>/Общий итог/i.test(l)); if(totalLine) overall=toIntSmart(totalLine);
+  const parsed={filials:data,overall}; ensureTotalsIfMissing(parsed); return parsed;
+}
+async function parseOne(file,label,baseProgress){
+  setStatus(`Чтение ${label}: стр.1 (дата)`); setBar(baseProgress+5);
+  const { pdf, usedWorker } = await loadPdfWithFallback(file,label);
+  log(`${label}: режим = ${usedWorker?"worker":"disableWorker"}`);
+  const meta = { date: await extractDate(pdf) };
 
-  /* ============================== ПАРСИНГ СТРУКТУРЫ ============================== */
-  function ensureTotalsIfMissing(parsed){
-    for(const [k,v] of Object.entries(parsed.filials||{})){
-      if(v.total==null){
-        const s = Object.values(v.statuses||{}).reduce((a,b)=>a+(+b||0),0);
-        if(s>0) v.total = s;
-      }
-    }
-    if(parsed.overall==null){
-      parsed.overall = Object.values(parsed.filials||{}).reduce((a,b)=>a+(+b.total||0),0);
-    }
+  setStatus(`Чтение ${label}: страница 2`); setBar(baseProgress+25);
+  const p2 = await parseFilialsOnPage(pdf,2);
+  setStatus(`Чтение ${label}: страница 3`); setBar(baseProgress+50);
+  const p3 = await parseFilialsOnPage(pdf,3);
+  setStatus(`Чтение ${label}: страница 4`); setBar(baseProgress+75);
+  const p4 = await parseFilialsOnPage(pdf,4);
+
+  setBar(baseProgress+90);
+  return { meta,p2,p3,p4 };
+}
+
+/* ================== РЕНДЕР/ВЫГРУЗКИ (как раньше) ================== */
+let CURRENT=null, PREV=null;
+let P2_CHART=null, P3_CHART=null, P4_CHART=null;
+
+function renderKpi(){
+  const kpi=$("#kpi"); kpi.innerHTML="";
+  if(!CURRENT||!PREV) return;
+  const p2c=CURRENT.p2.overall, p2p=PREV.p2.overall;
+  const revealed=(p2c!=null&&p2p!=null)?(p2c-p2p):null;
+  const rtC=CURRENT.p4.overall, rtP=PREV.p4.overall;
+  const rtDelta=(rtC!=null&&rtP!=null)?(rtC-rtP):null;
+
+  $("#report-dates").textContent=`Текущий: ${CURRENT.meta.date||"—"} · Предыдущий: ${PREV.meta.date||"—"}`;
+  kpi.innerHTML=`
+    <div class="tile"><h3>В работе всего, шт (стр.2, Общий итог)</h3><div class="v">${nfmt(p2c)}</div><div class="small muted">Пред.: ${nfmt(p2p)} · Изм.: ${deltaFmt(revealed)}</div></div>
+    <div class="tile"><h3>«Выявлено» за неделю</h3><div class="v">${nfmt(revealed)}</div><div class="small muted">Расчёт: текущий − предыдущий</div></div>
+    <div class="tile"><h3>ПАО «Ростелеком», всего (стр.4, Общий итог)</h3><div class="v">${nfmt(rtC)}</div><div class="small muted">Пред.: ${nfmt(rtP)} · Изм.: ${deltaFmt(rtDelta)}</div></div>
+  `;
+  const isOurDates = CURRENT.meta.date==="15.08.2025" && PREV.meta.date==="08.08.2025";
+  if(isOurDates){
+    if(revealed!==31627) log(`Ожидалось «Выявлено» = 31 627, получено ${revealed}`,"warn");
+    if(rtDelta!==20633)  log(`Ожидалось «Ростелеком Δ» = 20 633, получено ${rtDelta}`,"warn");
+    if(revealed===31627 && rtDelta===20633) log("Санити-чек пройден: «Выявлено»=31 627 и Ростелеком Δ=20 633");
   }
-  function unionStatuses(d1, d2){
-    const s = new Set();
-    for(const f of Object.values(d1.filials||{})) Object.keys(f.statuses||{}).forEach(x=>s.add(x));
-    for(const f of Object.values(d2.filials||{})) Object.keys(f.statuses||{}).forEach(x=>s.add(x));
-    const ordered = CANON_STATUSES.filter(x=>s.has(x));
-    for(const x of s) if(!ordered.includes(x)) ordered.push(x);
-    return ordered;
-  }
-  function filialRegex(f){
-    return new RegExp("^" + f.replace(/[-.*+?^${}()|[\]\\]/g,'\\$&') + "\\b");
-  }
-  function canonStatus(line){
-    if(/Будет включено/i.test(line) && /соглашение/i.test(line)) return CANON_STATUSES[0];
-    if(/В работе у филиала/i.test(line)) return CANON_STATUSES[1];
-    if(/Демон/i.test(line)) return CANON_STATUSES[2];
-    if(/на оформлении/i.test(line)) return CANON_STATUSES[3];
-    if(/на подписании/i.test(line)) return CANON_STATUSES[4];
-    if(/на согласовании/i.test(line)) return CANON_STATUSES[5];
-    return null;
-  }
-
-  async function extractDate(pdf){
-    try{
-      const lines = await getLinesFromPage(pdf, 1);
-      for(const line of lines){
-        const m = line.match(/по состоянию на\s+(\d{2}\.\d{2}\.\d{4})/i);
-        if(m) return m[1];
-      }
-    }catch(e){ log(`Не удалось извлечь дату со стр.1: ${e.message||e}`, "warn"); }
-    return null;
-  }
-
-  async function parseFilialsOnPage(pdf, pageNum){
-    const lines = await getLinesFromPage(pdf, pageNum);
-    const data = {};
-    let current = null;
-
-    for(const raw of lines){
-      const line = normStr(raw);
-      // Определяем филиал
-      const f = FILIALS.find(name => filialRegex(name).test(line));
-      if(f){
-        const total = toIntSmart(line);
-        data[f] = data[f] || { total: null, statuses:{} };
-        if(!isNaN(total)) data[f].total = total;
-        current = f;
-        continue;
-      }
-      // Статус под текущим филиалом
-      if(current){
-        const st = canonStatus(line);
-        if(st){
-          const v = toIntSmart(line);
-          if(!isNaN(v)) data[current].statuses[st] = v;
-          continue;
-        }
-      }
-    }
-
-    // «Общий итог»
-    let overall = null;
-    const totalLine = lines.find(l=>/Общий итог/i.test(l));
-    if(totalLine) overall = toIntSmart(totalLine);
-
-    const parsed = { filials: data, overall };
-    ensureTotalsIfMissing(parsed);
-    return parsed;
-  }
-
-  async function parseOne(file, label, baseProgress){
-    setStatus(`Чтение ${label}: стр.1 (дата)`); setBar(baseProgress+5);
-    const { pdf, usedWorker } = await loadPdfWithFallback(file, label);
-    log(`${label}: режим = ${usedWorker ? "worker" : "disableWorker"}`);
-
-    const meta = { date: await extractDate(pdf) };
-
-    setStatus(`Чтение ${label}: страница 2`); setBar(baseProgress+25);
-    const p2 = await parseFilialsOnPage(pdf, 2);
-
-    setStatus(`Чтение ${label}: страница 3`); setBar(baseProgress+50);
-    const p3 = await parseFilialsOnPage(pdf, 3);
-
-    setStatus(`Чтение ${label}: страница 4`); setBar(baseProgress+75);
-    const p4 = await parseFilialsOnPage(pdf, 4);
-
-    setBar(baseProgress+90);
-    return { meta, p2, p3, p4 };
-  }
-
-  /* ============================== РЕНДЕР ============================== */
-  let CURRENT=null, PREV=null;
-  let P2_CHART=null, P3_CHART=null, P4_CHART=null;
-
-  function renderKpi(){
-    const kpi = $("#kpi"); kpi.innerHTML = "";
-    if(!CURRENT || !PREV) return;
-    const p2c = CURRENT.p2.overall, p2p = PREV.p2.overall;
-    const revealed = (p2c!=null && p2p!=null) ? (p2c - p2p) : null;
-
-    const rtC = CURRENT.p4.overall, rtP = PREV.p4.overall;
-    const rtDelta = (rtC!=null && rtP!=null) ? (rtC - rtP) : null;
-
-    $("#report-dates").textContent = `Текущий: ${CURRENT.meta.date || "—"} · Предыдущий: ${PREV.meta.date || "—"}`;
-
-    kpi.innerHTML = `
-      <div class="tile"><h3>В работе всего, шт (стр.2, Общий итог)</h3>
-        <div class="v">${nfmt(p2c)}</div>
-        <div class="small muted">Пред.: ${nfmt(p2p)} · Изм.: ${deltaFmt(revealed)}</div>
-      </div>
-      <div class="tile"><h3>«Выявлено» за неделю</h3>
-        <div class="v">${nfmt(revealed)}</div>
-        <div class="small muted">Расчёт: текущий − предыдущий</div>
-      </div>
-      <div class="tile"><h3>ПАО «Ростелеком», всего (стр.4, Общий итог)</h3>
-        <div class="v">${nfmt(rtC)}</div>
-        <div class="small muted">Пред.: ${nfmt(rtP)} · Изм.: ${deltaFmt(rtDelta)}</div>
-      </div>
-    `;
-
-    // Санити-подсказка для ваших дат
-    const isOurDates = CURRENT.meta.date==="15.08.2025" && PREV.meta.date==="08.08.2025";
-    if(isOurDates){
-      if(revealed!==31627) log(`Ожидалось «Выявлено» = 31 627, получено ${revealed}`, "warn");
-      if(rtDelta!==20633)  log(`Ожидалось «Ростелеком Δ» = 20 633, получено ${rtDelta}`, "warn");
-      if(revealed===31627 && rtDelta===20633) log("Санити-чек пройден: «Выявлено»=31 627 и Ростелеком Δ=20 633");
-    }
-  }
-
-  function renderSection(targetId, curr, prev, chartId, chartTitle){
-    const statuses = unionStatuses(curr, prev);
-    const rows = [
-      "Сочинские ЭС","Тимашевские ЭС","Тихорецкие ЭС","Усть-Лабинские ЭС","Юго-Западные ЭС",
-      "Адыгейские ЭС","Армавирские ЭС","Краснодарские ЭС","Лабинские ЭС","Ленинградские ЭС","Славянские ЭС",
-    ].map(f=>{
-      const c = curr.filials[f] || { total:null, statuses:{} };
-      const p = prev.filials[f] || { total:null, statuses:{} };
-      const d = (c.total!=null && p.total!=null) ? (c.total - p.total) : null;
-      return { f, c:c.total, p:p.total, d };
-    });
-
-    const totalC = rows.reduce((a,r)=>a+(+r.c||0),0);
-    const totalP = rows.reduce((a,r)=>a+(+r.p||0),0);
-    const totalD = totalC - totalP;
-
-    let html = `<div class="fit"><table><thead>
-      <tr><th>Филиал</th><th>Текущий</th><th>Предыдущий</th><th>Изм.</th></tr>
-    </thead><tbody>`;
-    rows.forEach(r=>{
-      const badge = r.d==null? "" : (r.d>0? '<span class="badge ok">↑</span>' : r.d<0? '<span class="badge bad">↓</span>' : '<span class="badge warn">0</span>');
-      html += `<tr><td>${r.f}</td><td>${nfmt(r.c)}</td><td>${nfmt(r.p)}</td><td>${deltaFmt(r.d)} ${badge}</td></tr>`;
-    });
-    html += `</tbody><tfoot><tr><td>ИТОГО по обществу</td><td>${nfmt(totalC)}</td><td>${nfmt(totalP)}</td><td>${deltaFmt(totalD)}</td></tr></tfoot></table></div>`;
-
-    html += `<div class="hr"></div><div class="fit"><table><thead>
-      <tr><th>Статус</th><th>Текущий</th><th>Предыдущий</th><th>Изм.</th></tr>
-    </thead><tbody>`;
-    statuses.forEach(st=>{
-      const c = Object.values(curr.filials).reduce((a,v)=>a+(+v.statuses[st]||0),0);
-      const p = Object.values(prev.filials).reduce((a,v)=>a+(+v.statuses[st]||0),0);
-      html += `<tr><td>${st}</td><td>${nfmt(c)}</td><td>${nfmt(p)}</td><td>${deltaFmt(c-p)}</td></tr>`;
-    });
-    html += `</tbody></table></div>`;
-
-    document.getElementById(targetId).innerHTML = html;
-
-    // График
-    const labels = rows.map(r=>r.f);
-    const deltas = rows.map(r=>r.d ?? 0);
-    const currs  = rows.map(r=>r.c ?? 0);
-    const prevs  = rows.map(r=>r.p ?? 0);
-
-    if(chartId==="p2Chart" && P2_CHART) P2_CHART.destroy();
-    if(chartId==="p3Chart" && P3_CHART) P3_CHART.destroy();
-    if(chartId==="p4Chart" && P4_CHART) P4_CHART.destroy();
-
-    const chart = new Chart(document.getElementById(chartId), {
-      type:'bar',
-      data:{ labels, datasets:[
-        {label:'Изменение (текущий − предыдущий)', data:deltas},
-        {label:'Текущий', data:currs},
-        {label:'Предыдущий', data:prevs},
-      ]},
-      options:{ responsive:true, plugins:{legend:{position:'bottom'}, title:{display:true, text:chartTitle}}, scales:{y:{beginAtZero:true}} }
-    });
-    if(chartId==="p2Chart") P2_CHART = chart;
-    if(chartId==="p3Chart") P3_CHART = chart;
-    if(chartId==="p4Chart") P4_CHART = chart;
-  }
-
-  /* ============================== ВЫГРУЗКИ ============================== */
-  function yymmddRus(d){ return d?.replaceAll(".","-") || "дата"; }
-  async function downloadPptx(){
-    if(!CURRENT || !PREV) return;
-    const pptx = new PptxGenJS();
-    const dateC = CURRENT.meta.date, dateP = PREV.meta.date;
-
-    let slide = pptx.addSlide();
-    slide.background = { color: '0033A0' };
-    slide.addText("АО «Россети Кубань»", { x:0.5, y:0.4, fontSize:18, color:'FFFFFF', bold:true });
-    slide.addText("Информация о бездоговорном подвесе ВОЛС", { x:0.5, y:1.0, fontSize:28, color:'FFFFFF', bold:true });
-    slide.addText(`Текущий: ${dateC || "—"} · Предыдущий: ${dateP || "—"}`, { x:0.5, y:1.6, fontSize:16, color:'E3ECFF' });
-
-    const p2c = CURRENT.p2.overall, p2p = PREV.p2.overall, revealed = (p2c!=null&&p2p!=null)?(p2c-p2p):null;
-    slide = pptx.addSlide();
-    slide.addText("Итоги по обществу", {x:0.5,y:0.5,fontSize:22,bold:true,color:'0033A0'});
-    slide.addText(`В работе всего, шт: ${p2c?.toLocaleString('ru-RU')||"—"} (пред.: ${p2p?.toLocaleString('ru-RU')||"—"})`, {x:0.5,y:1.1,fontSize:16});
-    slide.addText(`«Выявлено» за неделю: ${revealed?.toLocaleString('ru-RU')||"—"}`, {x:0.5,y:1.6,fontSize:16});
-
-    async function addChartSlide(title, canvasId){
-      const b64 = document.getElementById(canvasId).toDataURL("image/png");
-      const slide = pptx.addSlide();
-      slide.addText(title, {x:0.5,y:0.5,fontSize:22,bold:true,color:'0033A0'});
-      slide.addImage({ data: b64, x:0.5, y:1.1, w:9.0, h:4.6 });
-    }
-    await addChartSlide("Динамика по филиалам — Страница 2", "p2Chart");
-    await addChartSlide("Динамика по филиалам — Приказ №425", "p3Chart");
-    await addChartSlide("Динамика по филиалам — ПАО «Ростелеком»", "p4Chart");
-
-    await pptx.writeFile({ fileName: `Презентация_ВОЛС_${yymmddRus(dateC)}.pptx` });
-  }
-  async function downloadPptPdf(){
-    if(!CURRENT || !PREV) return;
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({unit:"pt", format:"a4"});
-    const dateC = CURRENT.meta.date, dateP = PREV.meta.date;
-
-    function title(){
-      doc.setFillColor("#0033A0"); doc.rect(0,0,595,842,"F");
-      doc.setTextColor("#FFFFFF"); doc.setFont("helvetica","bold"); doc.setFontSize(18);
-      doc.text("АО «Россети Кубань»", 40, 60);
-      doc.setFontSize(26); doc.text("Информация о бездоговорном подвесе ВОЛС", 40, 110);
-      doc.setFontSize(14); doc.text(`Текущий: ${dateC||"—"} · Предыдущий: ${dateP||"—"}`, 40, 150);
-    }
-    function summary(){
-      doc.addPage(); doc.setTextColor("#0033A0"); doc.setFont("helvetica","bold"); doc.setFontSize(20);
-      doc.text("Итоги по обществу", 40, 50);
-      doc.setTextColor("#000"); doc.setFont("helvetica","normal"); doc.setFontSize(12);
-      const p2c = CURRENT.p2.overall, p2p = PREV.p2.overall, revealed = (p2c!=null&&p2p!=null)?(p2c-p2p):null;
-      doc.text(`В работе всего, шт: ${p2c?.toLocaleString('ru-RU')||"—"} (пред.: ${p2p?.toLocaleString('ru-RU')||"—"})`, 40, 90);
-      doc.text(`«Выявлено» за неделю: ${revealed?.toLocaleString('ru-RU')||"—"}`, 40, 110);
-    }
-    async function addChart(title, canvasId){
-      doc.addPage();
-      doc.setTextColor("#0033A0"); doc.setFont("helvetica","bold"); doc.setFontSize(16);
-      doc.text(title, 40, 50);
-      const img = document.getElementById(canvasId).toDataURL("image/png");
-      doc.addImage(img, "PNG", 40, 70, 515, 300);
-    }
-
-    title(); summary();
-    await addChart("Динамика по филиалам — Стр.2", "p2Chart");
-    await addChart("Динамика по филиалам — Приказ №425", "p3Chart");
-    await addChart("Динамика по филиалам — ПАО «Ростелеком»", "p4Chart");
-    doc.save(`Презентация_ВОЛС_${yymmddRus(dateC)}.pdf`);
-  }
-  async function downloadDocx(){
-    if(!CURRENT || !PREV) return;
-    const { Document, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, Packer } = docx;
-    const p2Rows = [
-      "Сочинские ЭС","Тимашевские ЭС","Тихорецкие ЭС","Усть-Лабинские ЭС","Юго-Западные ЭС",
-      "Адыгейские ЭС","Армавирские ЭС","Краснодарские ЭС","Лабинские ЭС","Ленинградские ЭС","Славянские ЭС",
-    ].map(f=>{
-      const c = CURRENT.p2.filials[f]?.total ?? null;
-      const p = PREV.p2.filials[f]?.total ?? null;
-      const d = (c!=null && p!=null) ? (c - p) : null;
-      return {f,c,p,d};
-    });
-
-    const head = new TableRow({
-      children:[
-        new TableCell({children:[new Paragraph({text:"Филиал", bold:true})]}),
-        new TableCell({children:[new Paragraph({text:"Текущий", bold:true})]}),
-        new TableCell({children:[new Paragraph({text:"Предыдущий", bold:true})]}),
-        new TableCell({children:[new Paragraph({text:"Изм.", bold:true})]}),
-      ]
-    });
-    const rows = p2Rows.map(r=>new TableRow({
-      children:[
-        new TableCell({children:[new Paragraph(r.f)]}),
-        new TableCell({children:[new Paragraph(nfmt(r.c))]}),
-        new TableCell({children:[new Paragraph(nfmt(r.p))]}),
-        new TableCell({children:[new Paragraph((r.d>0?"+":"") + (r.d?.toLocaleString('ru-RU') ?? "—"))]}),
-      ]
-    }));
-    const table = new Table({ rows:[head, ...rows], width:{size:100, type:WidthType.PERCENTAGE} });
-
-    const p2c = CURRENT.p2.overall, p2p = PREV.p2.overall, revealed = (p2c!=null&&p2p!=null)?(p2c-p2p):null;
-
-    const docxFile = new Document({
-      sections:[{ properties:{}, children:[
-        new Paragraph({alignment:AlignmentType.LEFT, children:[ new TextRun({text:"АО «Россети Кубань»", bold:true, size:28}) ]}),
-        new Paragraph({text:"Краткая справка по бездоговорному подвесу ВОЛС", spacing:{after:120}}),
-        new Paragraph({text:`Текущий: ${CURRENT.meta.date||"—"} · Предыдущий: ${PREV.meta.date||"—"}`, spacing:{after:180}}),
-        new Paragraph({text:"Итоги по обществу", bold:true}),
-        new Paragraph({text:`В работе всего, шт: ${nfmt(p2c)} (пред.: ${nfmt(p2p)})`}),
-        new Paragraph({text:`«Выявлено» за неделю: ${nfmt(revealed)}`, spacing:{after:180}}),
-        new Paragraph({text:"Динамика по филиалам (стр.2 — Всего)", bold:true}),
-        table,
-        new Paragraph({text:"Краткие выводы:", bold:true, spacing:{before:200}}),
-        new Paragraph({text:"1) Рост/снижение в разрезе филиалов отражён в колонке «Изм.»."}),
-        new Paragraph({text:"2) Детализация по статусам — на сайте в соответствующих таблицах."}),
-      ]}]
-    });
-
-    const blob = await Packer.toBlob(docxFile);
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `Справка_ВОЛС_${yymmddRus(CURRENT.meta.date)}.docx`;
-    a.click();
-  }
-  async function downloadDocPdf(){
-    if(!CURRENT || !PREV) return;
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({unit:"pt", format:"a4"});
-    const p2c = CURRENT.p2.overall, p2p = PREV.p2.overall, revealed = (p2c!=null&&p2p!=null)?(p2c-p2p):null;
-
-    doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.setTextColor("#0033A0");
-    doc.text("Краткая справка по бездоговорному подвесу ВОЛС", 40, 50);
-    doc.setFont("helvetica","normal"); doc.setTextColor("#000");
-    doc.text(`Текущий: ${CURRENT.meta.date||"—"} · Предыдущий: ${PREV.meta.date||"—"}`, 40, 75);
-    doc.text(`В работе всего, шт: ${nfmt(p2c)} (пред.: ${nfmt(p2p)})`, 40, 100);
-    doc.text(`«Выявлено» за неделю: ${nfmt(revealed)}`, 40, 120);
-
-    const top = [
-      "Сочинские ЭС","Тимашевские ЭС","Тихорецкие ЭС","Усть-Лабинские ЭС","Юго-Западные ЭС",
-      "Адыгейские ЭС","Армавирские ЭС","Краснодарские ЭС","Лабинские ЭС","Ленинградские ЭС","Славянские ЭС",
-    ].map(f=>{
-      const c = CURRENT.p2.filials[f]?.total ?? null;
-      const p = PREV.p2.filials[f]?.total ?? null;
-      const d = (c!=null && p!=null) ? (c - p) : null;
-      return {f,c,p,d};
-    }).filter(x=>x.d!=null).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d)).slice(0,5);
-
-    let y = 160;
-    doc.setFont("helvetica","bold"); doc.text("Топ-5 изменений (стр.2 — Всего)", 40, y);
-    y+=20; doc.setFont("helvetica","normal");
-    doc.text("Филиал                Текущий    Пред.    Изм.", 40, y); y+=14;
-    top.forEach(r=>{
-      const line = `${r.f.padEnd(22," ")} ${nfmt(r.c).padStart(8," ")}  ${nfmt(r.p).padStart(8," ")}  ${(r.d>0?"+":"")+(r.d?.toLocaleString('ru-RU')??"—")}`;
-      doc.text(line, 40, y); y+=14;
-    });
-
-    doc.save(`Справка_ВОЛС_${yymmddRus(CURRENT.meta.date)}.pdf`);
-  }
-
-  /* ============================== UI ЛОГИКА ============================== */
-  const fileC = $("#fileCurrent");
-  const fileP = $("#filePrev");
-  [fileC, fileP].forEach(inp=>inp.addEventListener("change", ()=>{
-    $("#btnParse").disabled = !(fileC.files[0] && fileP.files[0]);
-    $("#parseStatus").textContent = "";
-    setStatus(fileC.files[0] && fileP.files[0] ? "Готово к анализу" : "Ожидание файлов…");
-  }));
-
-  $("#btnParse").addEventListener("click", async ()=>{
-    const fC = fileC.files[0], fP = fileP.files[0];
-    if(!fC || !fP) return;
-
-    $("#btnParse").disabled = true;
-    $("#parseStatus").textContent = "Обработка PDF…";
-    $("#log").textContent = ""; // очистка лога
-    setBar(0); setStatus("Старт анализа");
-
-    try{
-      setBar(2); log("Начинаю обработку текущего отчёта");
-      const cur = await parseOne(fC, "Текущий отчёт", 0);
-      setBar(45); log("Текущий — готов");
-
-      setBar(47); log("Начинаю обработку предыдущего отчёта");
-      const prev = await parseOne(fP, "Предыдущий отчёт", 50);
-      setBar(90); log("Предыдущий — готов");
-
-      CURRENT = cur; PREV = prev;
-
-      // Рендер
-      log("Рендер KPI и таблиц…");
-      renderKpi();
-      renderSection("p2Tables", CURRENT.p2, PREV.p2, "p2Chart", "Страница 2 — Всего по филиалам");
-      renderSection("p3Tables", CURRENT.p3, PREV.p3, "p3Chart", "Приказ №425 — Всего по филиалам");
-      renderSection("p4Tables", CURRENT.p4, PREV.p4, "p4Chart", "ПАО «Ростелеком» — Всего по филиалам");
-
-      setBar(100); setStatus("Готово");
-      $("#parseStatus").textContent = "Готово.";
-      log("Готово. Если что-то не так — смотрите предупреждения выше.");
-    }catch(e){
-      log(`Анализ прерван: ${e && e.message || e}`, "error");
-      $("#parseStatus").textContent = "Ошибка парсинга. См. лог ниже.";
-      setStatus("Ошибка");
-    }finally{
-      $("#btnParse").disabled = false;
-    }
+}
+function renderSection(targetId,curr,prev,chartId,chartTitle){
+  const statuses=unionStatuses(curr,prev);
+  const labels=FILIALS;
+  const rows=labels.map(f=>{
+    const c=curr.filials[f]?.total??null;
+    const p=prev.filials[f]?.total??null;
+    const d=(c!=null&&p!=null)?(c-p):null;
+    return {f,c,p,d};
   });
 
-  /* ============================== КНОПКИ ВЫГРУЗОК ============================== */
-  $("#dlPptx").addEventListener("click", downloadPptx);
-  $("#dlPptPdf").addEventListener("click", downloadPptPdf);
-  $("#dlDocx").addEventListener("click", downloadDocx);
-  $("#dlDocPdf").addEventListener("click", downloadDocPdf);
-}); // <-- end load
+  const totalC=rows.reduce((a,r)=>a+(+r.c||0),0);
+  const totalP=rows.reduce((a,r)=>a+(+r.p||0),0);
+  const totalD=totalC-totalP;
+
+  let html=`<div class="fit"><table><thead><tr><th>Филиал</th><th>Текущий</th><th>Предыдущий</th><th>Изм.</th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const badge = r.d==null? "" : (r.d>0? '<span class="badge ok">↑</span>' : r.d<0? '<span class="badge bad">↓</span>' : '<span class="badge warn">0</span>');
+    html += `<tr><td>${r.f}</td><td>${nfmt(r.c)}</td><td>${nfmt(r.p)}</td><td>${deltaFmt(r.d)} ${badge}</td></tr>`;
+  });
+  html += `</tbody><tfoot><tr><td>ИТОГО по обществу</td><td>${nfmt(totalC)}</td><td>${nfmt(totalP)}</td><td>${deltaFmt(totalD)}</td></tr></tfoot></table></div>`;
+
+  html += `<div class="hr"></div><div class="fit"><table><thead><tr><th>Статус</th><th>Текущий</th><th>Предыдущий</th><th>Изм.</th></tr></thead><tbody>`;
+  statuses.forEach(st=>{
+    const c=Object.values(curr.filials).reduce((a,v)=>a+(+v.statuses[st]||0),0);
+    const p=Object.values(prev.filials).reduce((a,v)=>a+(+v.statuses[st]||0),0);
+    html += `<tr><td>${st}</td><td>${nfmt(c)}</td><td>${nfmt(p)}</td><td>${deltaFmt(c-p)}</td></tr>`;
+  });
+  html += `</tbody></table></div>`;
+  document.getElementById(targetId).innerHTML=html;
+
+  // график
+  const deltas=rows.map(r=>r.d??0);
+  const currs=rows.map(r=>r.c??0);
+  const prevs=rows.map(r=>r.p??0);
+  if(chartId==="p2Chart"&&window.P2_CHART) P2_CHART.destroy();
+  if(chartId==="p3Chart"&&window.P3_CHART) P3_CHART.destroy();
+  if(chartId==="p4Chart"&&window.P4_CHART) P4_CHART.destroy();
+  const chart=new Chart(document.getElementById(chartId),{
+    type:'bar',
+    data:{labels:labels,datasets:[
+      {label:'Изменение (текущий − предыдущий)',data:deltas},
+      {label:'Текущий',data:currs},
+      {label:'Предыдущий',data:prevs}
+    ]},
+    options:{responsive:true,plugins:{legend:{position:'bottom'},title:{display:true,text:chartTitle}},scales:{y:{beginAtZero:true}}}
+  });
+  if(chartId==="p2Chart") P2_CHART=chart;
+  if(chartId==="p3Chart") P3_CHART=chart;
+  if(chartId==="p4Chart") P4_CHART=chart;
+}
+
+/* ================== Выгрузки (pptx/pdf/docx) — как раньше ================== */
+function yymmddRus(d){ return d?.replaceAll(".","-") || "дата"; }
+async function downloadPptx(){ if(!CURRENT||!PREV) return;
+  const pptx=new PptxGenJS(); const dateC=CURRENT.meta.date, dateP=PREV.meta.date;
+  let slide=pptx.addSlide(); slide.background={color:'0033A0'};
+  slide.addText("АО «Россети Кубань»",{x:0.5,y:0.4,fontSize:18,color:'FFFFFF',bold:true});
+  slide.addText("Информация о бездоговорном подвесе ВОЛС",{x:0.5,y:1.0,fontSize:28,color:'FFFFFF',bold:true});
+  slide.addText(`Текущий: ${dateC||"—"} · Предыдущий: ${dateP||"—"}`,{x:0.5,y:1.6,fontSize:16,color:'E3ECFF'});
+  const p2c=CURRENT.p2.overall, p2p=PREV.p2.overall, revealed=(p2c!=null&&p2p!=null)?(p2c-p2p):null;
+  slide=pptx.addSlide();
+  slide.addText("Итоги по обществу",{x:0.5,y:0.5,fontSize:22,bold:true,color:'0033A0'});
+  slide.addText(`В работе всего, шт: ${p2c?.toLocaleString('ru-RU')||"—"} (пред.: ${p2p?.toLocaleString('ru-RU')||"—"})`,{x:0.5,y:1.1,fontSize:16});
+  slide.addText(`«Выявлено» за неделю: ${revealed?.toLocaleString('ru-RU')||"—"}`,{x:0.5,y:1.6,fontSize:16});
+  async function addChartSlide(title,canvasId){
+    const b64=document.getElementById(canvasId).toDataURL("image/png");
+    const s=pptx.addSlide(); s.addText(title,{x:0.5,y:0.5,fontSize:22,bold:true,color:'0033A0'});
+    s.addImage({data:b64,x:0.5,y:1.1,w:9.0,h:4.6});
+  }
+  await addChartSlide("Динамика по филиалам — Страница 2","p2Chart");
+  await addChartSlide("Динамика по филиалам — Приказ №425","p3Chart");
+  await addChartSlide("Динамика по филиалам — ПАО «Ростелеком»","p4Chart");
+  await pptx.writeFile({fileName:`Презентация_ВОЛС_${yymmddRus(dateC)}.pptx`});
+}
+async function downloadPptPdf(){ if(!CURRENT||!PREV) return;
+  const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:"pt",format:"a4"});
+  const dateC=CURRENT.meta.date, dateP=PREV.meta.date;
+  function title(){ doc.setFillColor("#0033A0"); doc.rect(0,0,595,842,"F");
+    doc.setTextColor("#FFFFFF"); doc.setFont("helvetica","bold"); doc.setFontSize(18); doc.text("АО «Россети Кубань»",40,60);
+    doc.setFontSize(26); doc.text("Информация о бездоговорном подвесе ВОЛС",40,110);
+    doc.setFontSize(14); doc.text(`Текущий: ${dateC||"—"} · Предыдущий: ${dateP||"—"}`,40,150);
+  }
+  function summary(){ doc.addPage(); doc.setTextColor("#0033A0"); doc.setFont("helvetica","bold"); doc.setFontSize(20); doc.text("Итоги по обществу",40,50);
+    doc.setTextColor("#000"); doc.setFont("helvetica","normal"); doc.setFontSize(12);
+    const p2c=CURRENT.p2.overall, p2p=PREV.p2.overall, revealed=(p2c!=null&&p2p!=null)?(p2c-p2p):null;
+    doc.text(`В работе всего, шт: ${p2c?.toLocaleString('ru-RU')||"—"} (пред.: ${p2p?.toLocaleString('ru-RU')||"—"})`,40,90);
+    doc.text(`«Выявлено» за неделю: ${revealed?.toLocaleString('ru-RU')||"—"}`,40,110);
+  }
+  async function addChart(title,canvasId){ doc.addPage(); doc.setTextColor("#0033A0"); doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.text(title,40,50);
+    const img=document.getElementById(canvasId).toDataURL("image/png"); doc.addImage(img,"PNG",40,70,515,300);
+  }
+  title(); summary();
+  await addChart("Динамика по филиалам — Стр.2","p2Chart");
+  await addChart("Динамика по филиалам — Приказ №425","p3Chart");
+  await addChart("Динамика по филиалам — ПАО «Ростелеком»","p4Chart");
+  doc.save(`Презентация_ВОЛС_${yymmddRus(dateC)}.pdf`);
+}
+async function downloadDocx(){ if(!CURRENT||!PREV) return;
+  const {Document,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,AlignmentType,Packer}=docx;
+  const rows=FILIALS.map(f=>{ const c=CURRENT.p2.filials[f]?.total??null; const p=PREV.p2.filials[f]?.total??null; const d=(c!=null&&p!=null)?(c-p):null; return {f,c,p,d};});
+  const head=new TableRow({children:[
+    new TableCell({children:[new Paragraph({text:"Филиал",bold:true})]}),
+    new TableCell({children:[new Paragraph({text:"Текущий",bold:true})]}),
+    new TableCell({children:[new Paragraph({text:"Предыдущий",bold:true})]}),
+    new TableCell({children:[new Paragraph({text:"Изм.",bold:true})]})
+  ]});
+  const body=rows.map(r=>new TableRow({children:[
+    new TableCell({children:[new Paragraph(r.f)]}),
+    new TableCell({children:[new Paragraph(nfmt(r.c))]}),
+    new TableCell({children:[new Paragraph(nfmt(r.p))]}),
+    new TableCell({children:[new Paragraph((r.d>0?"+":"")+(r.d?.toLocaleString('ru-RU')??"—"))]})
+  ]}));
+  const table=new Table({rows:[head,...body],width:{size:100,type:WidthType.PERCENTAGE}});
+  const p2c=CURRENT.p2.overall, p2p=PREV.p2.overall, revealed=(p2c!=null&&p2p!=null)?(p2c-p2p):null;
+  const docxFile=new Document({sections:[{properties:{},children:[
+    new Paragraph({alignment:AlignmentType.LEFT,children:[new TextRun({text:"АО «Россети Кубань»",bold:true,size:28})]}),
+    new Paragraph({text:"Краткая справка по бездоговорному подвесу ВОЛС",spacing:{after:120}}),
+    new Paragraph({text:`Текущий: ${CURRENT.meta.date||"—"} · Предыдущий: ${PREV.meta.date||"—"}`,spacing:{after:180}}),
+    new Paragraph({text:"Итоги по обществу",bold:true}),
+    new Paragraph({text:`В работе всего, шт: ${nfmt(p2c)} (пред.: ${nfmt(p2p)})`}),
+    new Paragraph({text:`«Выявлено» за неделю: ${nfmt(revealed)}`,spacing:{after:180}}),
+    new Paragraph({text:"Динамика по филиалам (стр.2 — Всего)",bold:true}),
+    table
+  ]}]});
+  const blob=await Packer.toBlob(docxFile); const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=`Справка_ВОЛС_${yymmddRus(CURRENT.meta.date)}.docx`; a.click();
+}
+async function downloadDocPdf(){ if(!CURRENT||!PREV) return;
+  const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:"pt",format:"a4"});
+  const p2c=CURRENT.p2.overall, p2p=PREV.p2.overall, revealed=(p2c!=null&&p2p!=null)?(p2c-p2p):null;
+  doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.setTextColor("#0033A0"); doc.text("Краткая справка по бездоговорному подвесу ВОЛС",40,50);
+  doc.setFont("helvetica","normal"); doc.setTextColor("#000"); doc.text(`Текущий: ${CURRENT.meta.date||"—"} · Предыдущий: ${PREV.meta.date||"—"}`,40,75);
+  doc.text(`В работе всего, шт: ${nfmt(p2c)} (пред.: ${nfmt(p2p)})`,40,100); doc.text(`«Выявлено» за неделю: ${nfmt(revealed)}`,40,120);
+  doc.save(`Справка_ВОЛС_${yymmddRus(CURRENT.meta.date)}.pdf`);
+}
+
+/* ================== UI: загрузка файлов и ПУСК ================== */
+const fileC=$("#fileCurrent"); const fileP=$("#filePrev");
+[fileC,fileP].forEach(inp=>inp.addEventListener("change",()=>{
+  $("#btnParse").disabled=!(fileC.files[0]&&fileP.files[0]);
+  $("#parseStatus").textContent=""; setStatus(fileC.files[0]&&fileP.files[0]?"Готово к анализу":"Ожидание файлов…");
+}));
+
+$("#btnParse").addEventListener("click", async ()=>{
+  $("#btnParse").disabled=true; $("#parseStatus").textContent="Обработка PDF…"; $("#log").textContent="";
+  setBar(0); setStatus("Подготовка…");
+  try{
+    const ok = await ensurePdfJs();
+    if(!ok){ $("#parseStatus").textContent="Не удалось загрузить pdf.js (см. лог)."; setStatus("Ошибка pdf.js"); return; }
+
+    setBar(2); log("Начинаю обработку текущего отчёта");
+    const cur = await parseOne(fileC.files[0],"Текущий отчёт",0);
+    setBar(45); log("Текущий — готов");
+
+    setBar(47); log("Начинаю обработку предыдущего отчёта");
+    const prev = await parseOne(fileP.files[0],"Предыдущий отчёт",50);
+    setBar(90); log("Предыдущий — готов");
+
+    CURRENT=cur; PREV=prev;
+
+    log("Рендер KPI и таблиц…");
+    renderKpi();
+    renderSection("p2Tables", CURRENT.p2, PREV.p2, "p2Chart", "Страница 2 — Всего по филиалам");
+    renderSection("p3Tables", CURRENT.p3, PREV.p3, "p3Chart", "Приказ №425 — Всего по филиалам");
+    renderSection("p4Tables", CURRENT.p4, PREV.p4, "p4Chart", "ПАО «Ростелеком» — Всего по филиалам");
+
+    setBar(100); setStatus("Готово"); $("#parseStatus").textContent="Готово.";
+  }catch(e){
+    log(`Анализ прерван: ${e.message||e}`,"error");
+    $("#parseStatus").textContent="Ошибка парсинга. См. лог ниже.";
+    setStatus("Ошибка");
+  }finally{
+    $("#btnParse").disabled=false;
+  }
+});
+
+/* ================== КНОПКИ ВЫГРУЗОК ================== */
+$("#dlPptx").addEventListener("click", downloadPptx);
+$("#dlPptPdf").addEventListener("click", downloadPptPdf);
+$("#dlDocx").addEventListener("click", downloadDocx);
+$("#dlDocPdf").addEventListener("click", downloadDocPdf);
 </script>
 </body>
 </html>
