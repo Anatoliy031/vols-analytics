@@ -246,7 +246,7 @@ const BRANCH_PATTERNS = [
   {name:"Славянские ЭС",     re:/Славянские\s+ЭС/i},
 ];
 
-/* === Стадии: улучшенный паттерн «Будет включено … (после подписания)» === */
+/* === Стадии === */
 const STATUS_PATTERNS = [
   {key:"work",       title:"В работе у филиала",         re:/В\s*работе\s*у\s*филиала/i},
   {key:"dismantled", title:"Демонтировано",              re:/Демонтировано/i},
@@ -256,7 +256,6 @@ const STATUS_PATTERNS = [
   {
     key:"incl_next",
     title:"Будет включено в следующее доп. соглашение после подписания",
-    // допускаем «в/во», «следующ(ее/ем)», «доп./дополнительное», «соглашение/соглашении», опционально «после подписания ...»
     re:/Будет\s*включено(?:\s*в|во)?\s*следующ[её](?:е|ем)?\s*доп(?:\.|олнительн\w*)?\s*соглашен[иеия][\w\s\-–—]*?(?:после\s*подписан[ияие][\w\s\-–—]*)?/i
   },
 ];
@@ -312,49 +311,32 @@ function parseTotalsFromPage(page1){
   };
 }
 
-/* === Вспомогательные для статусов с переносом/табличной вёрсткой === */
 function isBranchHeader(line){ return BRANCH_PATTERNS.some(bp => bp.re.test(line)); }
 
-/** Ищем число рядом с индексом idx:
- *  - сначала в текущей строке
- *  - затем в 1..lookNext строках вперёд (до следующего филиала)
- *  - затем в 1..lookPrev строках назад
- * Это покрывает случаи, когда число в отдельном левом/правом столбце. */
 function findNumberNear(lines, idx, lookPrev=2, lookNext=2){
   const tryLine = (i) => {
     if(i<0 || i>=lines.length) return 0;
     const nums = lines[i].match(/\d[\d\s\-]*/g);
     if(nums && nums.length){
-      // берём «самое численное» в строке (обычно последний столбец)
       const cand = nums.map(numberize).filter(v=>!Number.isNaN(v));
       const val = cand.length ? cand[cand.length-1] : 0;
       if(val!==0) return val;
     }
     return 0;
   };
-
-  // текущая
-  let val = tryLine(idx);
-  if(val) return val;
-
-  // вперёд, но не заходим в следующий филиал
+  let val = tryLine(idx); if(val) return val;
   for(let k=1;k<=lookNext;k++){
     const i = idx + k; if(i>=lines.length) break;
     if(isBranchHeader(lines[i])) break;
     val = tryLine(i); if(val) return val;
   }
-
-  // назад (на случай, когда цифра «слева», а текст стадии справа)
   for(let k=1;k<=lookPrev;k++){
     const i = idx - k; if(i<0) break;
-    // назад филиальный заголовок нам не мешает — это всё та же вкладка-строка
     val = tryLine(i); if(val) return val;
   }
-
   return 0;
 }
 
-/* — основная таблица филиалов + статусы по филиалам */
 function parseBranchTable(pageText) {
   const text = normalize(pageText);
   const lines = text.split("\n").filter(Boolean);
@@ -366,7 +348,6 @@ function parseBranchTable(pageText) {
     for(const bp of BRANCH_PATTERNS){ if(bp.re.test(line)){ branchName = bp.name; break; } }
     if(!branchName) continue;
 
-    // «Всего опор» — в строке или следующей
     let total = 0;
     const n1 = line.match(/\d[\d\s]*/g);
     if(n1 && n1.length) total = numberize(n1[n1.length-1]);
@@ -379,13 +360,10 @@ function parseBranchTable(pageText) {
       branches.set(branchName,{ total, statuses:{} });
     }
 
-    // блок статусов этого филиала
     let j=i+1;
     while(j<lines.length && j<i+18){
       const ln = lines[j];
       if(isBranchHeader(ln)) break;
-
-      // проверяем каждую стадию; допускаем переносы и «склейку» с соседними строками
       for(const sp of STATUS_PATTERNS){
         const prev = lines[j-1] || "";
         const next = lines[j+1] || "";
@@ -405,17 +383,14 @@ function parseBranchTable(pageText) {
     }
   }
 
-  // гарантируем наличие всех филиалов
   for(const b of BRANCHES){ if(!branches.has(b)) branches.set(b,{total:0,statuses:{}}); }
 
-  // суммарные стадии по филиалам
   const stages = {};
   for(const v of branches.values()){
     for(const [k,val] of Object.entries(v.statuses)) stages[k]=(stages[k]||0)+val;
   }
 
-  /* РЕЗЕРВНЫЙ ПАРС СТАДИЙ ПО ВСЕЙ СТРАНИЦЕ (если по филиалам нули),
-     учитываем перенос названия и число в соседних строках (в обе стороны) */
+  const lines = text.split("\n").filter(Boolean);
   const pageStageTotals = {};
   for(let idx=0; idx<lines.length; idx++){
     for(const sp of STATUS_PATTERNS){
@@ -426,7 +401,6 @@ function parseBranchTable(pageText) {
       const mergedNext = curr + " " + next;
       if(sp.re.test(curr) || sp.re.test(mergedPrev) || sp.re.test(mergedNext)){
         const v = findNumberNear(lines, idx, 2, 2);
-        // если уже что-то есть, берём max (чтобы не удвоить при повторах)
         pageStageTotals[sp.key] = Math.max(pageStageTotals[sp.key]||0, v);
       }
     }
@@ -464,7 +438,7 @@ function computeDynamics(curr, prev){
   const makeRows = (cPage, pPage) => BRANCHES.map(b=>{
     const c = cPage.branches.get(b)?.total || 0;
     const p = pPage.branches.get(b)?.total || 0;
-    return {b, p, c, d: (c - p)}; // ТЕК − ПРЕД
+    return {b, p, c, d: (c - p)};
   });
 
   const branchRows   = makeRows(curr.p2, prev.p2);
@@ -486,7 +460,7 @@ function computeDynamics(curr, prev){
   }));
 
   const stagesS2 = diffStages(curr.p2.stages||{}, prev.p2.stages||{});
-  const stagesS3 = diffStages(curr.p3.stages||{}, prev.p3.stages||{}); // 425 — с учётом «после подписания»
+  const stagesS3 = diffStages(curr.p3.stages||{}, prev.p3.stages||{});
   const stagesS4 = diffStages(curr.p4.stages||{}, prev.p4.stages||{});
 
   return {
@@ -544,7 +518,6 @@ function renderBranchesTable(rows, tbodySel, sumPrevId, sumCurrId, sumDeltaId){
 function renderCharts(curr, prev, dyn){
   const labels = BRANCHES;
 
-  // Стр.2
   const prevS2 = labels.map(b=>prev.p2.branches.get(b)?.total||0);
   const currS2 = labels.map(b=>curr.p2.branches.get(b)?.total||0);
   if(chartBranches) chartBranches.destroy();
@@ -556,7 +529,6 @@ function renderCharts(curr, prev, dyn){
     options:{responsive:true,plugins:{legend:{position:"top"}},scales:{y:{beginAtZero:true}}}
   });
 
-  // Стр.3
   const prevS3 = labels.map(b=>prev.p3.branches.get(b)?.total||0);
   const currS3 = labels.map(b=>curr.p3.branches.get(b)?.total||0);
   if(chartBranchesS3) chartBranchesS3.destroy();
@@ -568,7 +540,6 @@ function renderCharts(curr, prev, dyn){
     options:{responsive:true,plugins:{legend:{position:"top"}},scales:{y:{beginAtZero:true}}}
   });
 
-  // Стр.4
   const prevS4 = labels.map(b=>prev.p4.branches.get(b)?.total||0);
   const currS4 = labels.map(b=>curr.p4.branches.get(b)?.total||0);
   if(chartBranchesS4) chartBranchesS4.destroy();
@@ -580,7 +551,6 @@ function renderCharts(curr, prev, dyn){
     options:{responsive:true,plugins:{legend:{position:"top"}},scales:{y:{beginAtZero:true}}}
   });
 
-  // Δ-гистограмма РТК
   const rtkD = labels.map(b => (dyn.rtkRows.find(x => x.b === b) || {c:0,p:0}).c - (dyn.rtkRows.find(x => x.b === b) || {c:0,p:0}).p);
   if(chartRTKDelta) chartRTKDelta.destroy();
   chartRTKDelta = new Chart(document.getElementById("chartRTKDelta"), {
@@ -604,7 +574,7 @@ function renderStagesTables(dyn){
   fill("#tblStagesS4", dyn.stagesS4);
 }
 
-/* ===== Вспомогательная для стадий: показать все ===== */
+/* ===== Показать все стадии ===== */
 function expandAllStages(rows){
   const byKey = new Map((rows||[]).map(r => [r.key, r]));
   return STATUS_PATTERNS.map(sp => {
@@ -687,7 +657,6 @@ function buildPresentationHTML(curr, prev, dyn){
       </div>
     </div>`;
 
-  // KPI (без «коэф. эффективности недели»)
   document.getElementById("presKpis").innerHTML =
     box("В работе всего, шт.", curr.p1.totals.in_work_total, dyn.in_work_total) +
     box("Выявлено за неделю, шт.", dyn.found_week, dyn.found_week) +
@@ -695,22 +664,18 @@ function buildPresentationHTML(curr, prev, dyn){
     box("ПАО «Ростелеком» в работе, шт. (доля, %)", 
         `${fmt(curr.p1.totals.rtk_in_work)} (${rtkShare.toFixed(1)}%)`, dyn.rtk_in_work);
 
-  // Таблица по стр.2 → «Динамика по филиалам (всего)»
   const rowsS2 = Array.from(document.querySelectorAll("#tblBranches tbody tr")).map(tr => {
     const t = tr.querySelectorAll("td");
     return { b: t[0].textContent, p: numberize(t[1].textContent), c: numberize(t[2].textContent), d: numberize(t[3].textContent) };
   });
   document.getElementById("presTable").innerHTML = presTableHTML("Динамика по филиалам (всего)", rowsS2, ["sumPrev","sumCurr","sumDelta"]);
 
-  // Таблица по стр.3 → «Динамика выявления по 425 Приказу»
   const rowsS3 = (DATA?.dyn?.branchRowsS3||[]);
   document.getElementById("presTableS3").innerHTML = presTableHTML("Динамика выявления по 425 Приказу", rowsS3, ["sumPrevS3","sumCurrS3","sumDeltaS3"]);
 
-  // Таблица по стр.4 → «Динамика выявления по Ростелекому»
   const rowsS4 = (DATA?.dyn?.branchRowsS4||[]);
   document.getElementById("presTableS4").innerHTML = presTableHTML("Динамика выявления по Ростелекому", rowsS4, ["sumPrevS4","sumCurrS4","sumDeltaS4"]);
 
-  // Все стадии (показываем полный набор)
   const s2all = expandAllStages(dyn.stagesS2);
   const s3all = expandAllStages(dyn.stagesS3);
   const s4all = expandAllStages(dyn.stagesS4);
@@ -763,7 +728,7 @@ function buildSummaryBlocks(curr, prev, dyn){
   `;
 }
 
-/* ===== Google Sheets: «План–Факт» как есть ===== */
+/* ===== Google Sheets: вставка таблицы «Выполнение плановых показателей ВОЛС» ===== */
 const SHEET_HTML_URL = "https://docs.google.com/spreadsheets/d/1Y9bM7zLRf_gonMUgfQLl57Iu3NgPa78rBXnpxkKLvO0/gviz/tq?tqx=out:html";
 async function injectPlanFactHTML(){
   try{
@@ -774,12 +739,12 @@ async function injectPlanFactHTML(){
     tmp.innerHTML = html;
     const table = tmp.querySelector("table");
     if(!table){ throw new Error("Таблица не найдена в HTML ответе."); }
-    const caption = `<div style="font-weight:700;margin:6px 0 4px">План–Факт (таблица из Google Sheets)</div>`;
+    const caption = `<div style="font-weight:700;margin:6px 0 4px">Выполнение плановых показателей ВОЛС</div>`;
     document.getElementById("presPlanFactInner").innerHTML = caption + table.outerHTML;
     document.getElementById("briefPlanFactInner").innerHTML = caption + table.outerHTML;
   }catch(e){
     console.warn("Не удалось вставить таблицу Google Sheets:", e);
-    const fallback = `<div class="note">План–Факт: не удалось получить HTML таблицы. <a href="https://docs.google.com/spreadsheets/d/1Y9bM7zLRf_gonMUgfQLl57Iu3NgPa78rBXnpxkKLvO0/edit?usp=drivesdk" target="_blank" rel="noopener">Открыть по ссылке</a></div>`;
+    const fallback = `<div class="note">Выполнение плановых показателей ВОЛС: не удалось получить HTML таблицы. <a href="https://docs.google.com/spreadsheets/d/1Y9bM7zLRf_gonMUgfQLl57Iu3NgPa78rBXnpxkKLvO0/edit?usp=drivesdk" target="_blank" rel="noopener">Открыть по ссылке</a></div>`;
     document.getElementById("presPlanFactInner").innerHTML = fallback;
     document.getElementById("briefPlanFactInner").innerHTML = fallback;
   }
@@ -962,12 +927,10 @@ document.getElementById("btnParse").addEventListener("click", async () => {
     renderCharts(curr, prev, dyn);
     renderStagesTables(dyn);
 
-    // Презентация/Выжимка
     buildPresentationHTML(curr, prev, dyn);
     document.getElementById("briefDates").textContent = `Предыдущий: ${prev.date} · Текущий: ${curr.date}`;
     buildSummaryBlocks(curr, prev, dyn);
 
-    // Вставляем таблицу План–Факт из Google Sheets
     await injectPlanFactHTML();
 
     document.getElementById("loadingMsg").classList.remove("active");
@@ -1005,4 +968,3 @@ document.getElementById("exportBriefPDF").addEventListener("click", async () => 
 </script>
 </body>
 </html>
- 
