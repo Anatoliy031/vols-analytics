@@ -185,7 +185,7 @@
 
 <!-- Печатные области -->
 <div id="presentationPrint" class="compact" style="display:none">
-  <div class="logoTitle">АО «Россети Кубань» — Презентация (еженедельная динамика ВОЛС)</div>
+  <div class="logoTitle">Динамика ВОЛС</div>
   <div id="presPlanFactTop" class="planfact-wrap section"><div class="planfact-scale" id="presPlanFactInner"></div></div>
 
   <div id="presDates" class="note" style="margin:4px 0 8px"></div>
@@ -390,17 +390,17 @@ function parseBranchTable(pageText) {
     for(const [k,val] of Object.entries(v.statuses)) stages[k]=(stages[k]||0)+val;
   }
 
-  const lines = text.split("\n").filter(Boolean);
+  const lines2 = text.split("\n").filter(Boolean);
   const pageStageTotals = {};
-  for(let idx=0; idx<lines.length; idx++){
+  for(let idx=0; idx<lines2.length; idx++){
     for(const sp of STATUS_PATTERNS){
-      const prev = lines[idx-1] || "";
-      const curr = lines[idx];
-      const next = lines[idx+1] || "";
+      const prev = lines2[idx-1] || "";
+      const curr = lines2[idx];
+      const next = lines2[idx+1] || "";
       const mergedPrev = prev + " " + curr;
       const mergedNext = curr + " " + next;
       if(sp.re.test(curr) || sp.re.test(mergedPrev) || sp.re.test(mergedNext)){
-        const v = findNumberNear(lines, idx, 2, 2);
+        const v = findNumberNear(lines2, idx, 2, 2);
         pageStageTotals[sp.key] = Math.max(pageStageTotals[sp.key]||0, v);
       }
     }
@@ -492,7 +492,7 @@ function renderKpis(curr, prev, dyn){
     return `<div class="kpi">
       <div class="title">${it.title}</div>
       <div class="value">${typeof it.curr==="number"?fmt(it.curr):it.curr}</div>
-      <div class="delta ${cls}">${sign}${fmt(d)} неделя к неделе</div>
+      <div class="delta ${cls}">${sign}${fmt(d)}</div>
     </div>`;
   }).join("");
 }
@@ -653,7 +653,7 @@ function buildPresentationHTML(curr, prev, dyn){
       <div style="color:#5f6b7a;font-size:11px">${t}</div>
       <div style="font-weight:800;font-size:16px">${typeof val === "number" ? fmt(val) : val}</div>
       <div style="font-size:11px;color:${delta > 0 ? '#0a7a2d' : (delta < 0 ? '#b00020' : '#5f6b7a')}">
-        ${delta > 0 ? '+' : ''}${fmt(delta)} неделя к неделе
+        ${delta > 0 ? '+' : ''}${fmt(delta)}
       </div>
     </div>`;
 
@@ -697,7 +697,7 @@ function buildSummaryBlocks(curr, prev, dyn){
 
   blocks.innerHTML = `
     <h3>Стр. 1 — Общая (нарастающим)</h3>
-    <div>• В работе всего: <b>${fmt(curr.p1.totals.in_work_total)}</b> (${dyn.in_work_total>0?'+':''}${fmt(dyn.in_work_total)} н/н)</div>
+    <div>• В работе всего: <b>${fmt(curr.p1.totals.in_work_total)}</b> (${dyn.in_work_total>0?'+':''}${fmt(dyn.in_work_total)})</div>
     <div>• Выявлено за неделю: <b>${fmt(dyn.found_week)}</b> (расчёт от «в работе всего»)</div>
     <div>• Закрыто за неделю (узак.+демонт.): <b>${fmt(eff)}</b></div>
     <div>• ПАО «Ростелеком» в работе: <b>${fmt(curr.p1.totals.rtk_in_work)}</b> (${dyn.rtk_in_work>0?'+':''}${fmt(dyn.rtk_in_work)})</div>
@@ -728,7 +728,7 @@ function buildSummaryBlocks(curr, prev, dyn){
   `;
 }
 
-/* ===== Google Sheets: вставка таблицы «Выполнение плановых показателей ВОЛС» ===== */
+/* ===== Google Sheets: вставка таблицы «План-Факт» ===== */
 const SHEET_HTML_URL = "https://docs.google.com/spreadsheets/d/1Y9bM7zLRf_gonMUgfQLl57Iu3NgPa78rBXnpxkKLvO0/gviz/tq?tqx=out:html";
 async function injectPlanFactHTML(){
   try{
@@ -739,12 +739,12 @@ async function injectPlanFactHTML(){
     tmp.innerHTML = html;
     const table = tmp.querySelector("table");
     if(!table){ throw new Error("Таблица не найдена в HTML ответе."); }
-    const caption = `<div style="font-weight:700;margin:6px 0 4px">Выполнение плановых показателей ВОЛС</div>`;
+    const caption = `<div style="font-weight:700;margin:6px 0 4px">План-Факт</div>`;
     document.getElementById("presPlanFactInner").innerHTML = caption + table.outerHTML;
     document.getElementById("briefPlanFactInner").innerHTML = caption + table.outerHTML;
   }catch(e){
     console.warn("Не удалось вставить таблицу Google Sheets:", e);
-    const fallback = `<div class="note">Выполнение плановых показателей ВОЛС: не удалось получить HTML таблицы. <a href="https://docs.google.com/spreadsheets/d/1Y9bM7zLRf_gonMUgfQLl57Iu3NgPa78rBXnpxkKLvO0/edit?usp=drivesdk" target="_blank" rel="noopener">Открыть по ссылке</a></div>`;
+    const fallback = `<div class="note">План-Факт: не удалось получить HTML таблицы. <a href="https://docs.google.com/spreadsheets/d/1Y9bM7zLRf_gonMUgfQLl57Iu3NgPa78rBXnpxkKLvO0/edit?usp=drivesdk" target="_blank" rel="noopener">Открыть по ссылке</a></div>`;
     document.getElementById("presPlanFactInner").innerHTML = fallback;
     document.getElementById("briefPlanFactInner").innerHTML = fallback;
   }
@@ -778,7 +778,7 @@ async function exportBriefPDF(){
   el.style.display = "none";
 }
 
-/* ===== PPTX / DOCX (как было) ===== */
+/* ===== PPTX / DOCX (оставлено, фразы «н/н» убраны) ===== */
 async function exportPresPPTX(curr, prev, dyn, rows){
   try {
     const pptx = new PptxGenJS();
@@ -795,7 +795,7 @@ async function exportPresPPTX(curr, prev, dyn, rows){
     const k = (t, val, delta, y) => {
       s1.addText(t, {x: 0.5, y, fontSize: 12, color: "666"});
       s1.addText(typeof val === "number" ? fmt(val) : val, {x: 0.5, y: y + 0.25, fontSize: 18, bold: true});
-      s1.addText(`${delta > 0 ? '+' : ''}${fmt(delta)} н/н`, {
+      s1.addText(`${delta > 0 ? '+' : ''}${fmt(delta)}`, {
         x: 3.6, y: y + 0.25, fontSize: 12, 
         color: delta > 0 ? '228B22' : (delta < 0 ? 'B00020' : '666')
       });
