@@ -250,15 +250,20 @@ const BRANCH_PATTERNS = [
   {name:"Славянские ЭС",     re:/Славянские\s+ЭС/i},
 ];
 
+/* === ВАЖНО: стадия «Будет включено ... после подписания» — расширенный паттерн === */
 const STATUS_PATTERNS = [
   {key:"work",       title:"В работе у филиала",         re:/В\s*работе\s*у\s*филиала/i},
   {key:"dismantled", title:"Демонтировано",              re:/Демонтировано/i},
   {key:"rc_digit",   title:"Договор на оформлении Россети Цифра", re:/Договор\s*на\s*оформлении\s*Россети\s*Цифра/i},
   {key:"op_sign",    title:"Договор на подписании у оператора",   re:/Договор\s*на\s*подписании\s*у\s*оператора/i},
   {key:"filial_appr",title:"Договор на согласовании в филиале",   re:/Договор\s*на\s*согласовании\s*в\s*филиале/i},
-  /* УСИЛЕННЫЙ регэксп под разные написания «доп. соглашение» */
-  {key:"incl_next",  title:"Будет включено в следующее доп. соглашение",
-   re:/Будет\s*включено(?:\s*в)?\s*следующ[её][\w\-]*\s*доп(?:\.|олнительн\w*)?\s*соглашени[еяиюе]/i},
+  {
+    key:"incl_next",
+    title:"Будет включено в следующее доп. соглашение после подписания",
+    /* ловим: «Будет включено (в) следующее(е) доп.,/дополнительное соглашение [после подписания]»,
+       допускаем перенос на следующую строку */
+    re:/Будет\s*включено(?:\s*в)?\s*следующ[её][\w\-]*\s*доп(?:\.|олнительн\w*)?\s*соглашени[еяиюе](?:\s*после\s*подписан[ияие])?/i
+  },
 ];
 
 const numberize = s => Number(String(s||"").replace(/[^\d\-]/g,"")) || 0;
@@ -312,6 +317,24 @@ function parseTotalsFromPage(page1){
   };
 }
 
+/* === Вспомогательные для статусов с переносом строки === */
+function isBranchHeader(line){ return BRANCH_PATTERNS.some(bp => bp.re.test(line)); }
+function findNumberNear(lines, idx, maxLookahead=2){
+  // Ищем число в текущей строке и в следующих maxLookahead строках (если нет заголовка филиала)
+  for(let k=0;k<=maxLookahead;k++){
+    const i = idx + k;
+    if(i>=lines.length) break;
+    const ln = lines[i];
+    if(k>0 && isBranchHeader(ln)) break; // не выходим за следующий филиал
+    const nums = ln.match(/\d[\d\s\-]*/g);
+    if(nums && nums.length){
+      const val = numberize(nums[nums.length-1]);
+      if(val!==0) return val;
+    }
+  }
+  return 0;
+}
+
 /* — основная таблица филиалов + статусы по филиалам */
 function parseBranchTable(pageText) {
   const text = normalize(pageText);
@@ -324,6 +347,7 @@ function parseBranchTable(pageText) {
     for(const bp of BRANCH_PATTERNS){ if(bp.re.test(line)){ branchName = bp.name; break; } }
     if(!branchName) continue;
 
+    // «Всего опор» — в строке или следующей
     let total = 0;
     const n1 = line.match(/\d[\d\s]*/g);
     if(n1 && n1.length) total = numberize(n1[n1.length-1]);
@@ -336,14 +360,24 @@ function parseBranchTable(pageText) {
       branches.set(branchName,{ total, statuses:{} });
     }
 
+    // блок статусов этого филиала
     let j=i+1;
-    while(j<lines.length && j<i+12){
+    while(j<lines.length && j<i+14){
       const ln = lines[j];
-      if(BRANCH_PATTERNS.some(bp=>bp.re.test(ln))) break;
+      if(isBranchHeader(ln)) break;
+
+      // проверяем каждую стадию; допускаем, что название и число на следующей строке
       for(const sp of STATUS_PATTERNS){
-        if(sp.re.test(ln)){
-          const ns = ln.match(/\d[\d\s]*/g);
-          if(ns && ns.length) branches.get(branchName).statuses[sp.key] = numberize(ns[ns.length-1]);
+        const merged = ln + " " + (lines[j+1] || "");
+        if(sp.re.test(ln) || sp.re.test(merged)){
+          // число ищем в этой строке и ближайших двух (если перенос)
+          const value = findNumberNear(lines, j, 2);
+          if(value>0){
+            const obj = branches.get(branchName);
+            if(!obj.statuses[sp.key] || obj.statuses[sp.key]===0){
+              obj.statuses[sp.key] = value;
+            }
+          }
         }
       }
       j++;
@@ -359,21 +393,17 @@ function parseBranchTable(pageText) {
     for(const [k,val] of Object.entries(v.statuses)) stages[k]=(stages[k]||0)+val;
   }
 
-  /* РЕЗЕРВНЫЙ ПАРС СТАДИЙ С ВЕСЬ СТРАНИЦЫ (если по филиалам нули),
-     чтобы не терялась строка «Будет включено...» и др. */
+  /* РЕЗЕРВНЫЙ ПАРС СТАДИЙ ПО ВСЕЙ СТРАНИЦЕ (если по филиалам нули),
+     учитываем перенос названия стадии на следующую строку И число на следующей строке */
   const pageStageTotals = {};
-  for(const sp of STATUS_PATTERNS){
-    const re = sp.re;
-    const matches = lines.filter(l => re.test(l));
-    let best = 0;
-    for(const m of matches){
-      const nums = m.match(/\d[\d\s]*/g);
-      if(nums && nums.length){
-        const v = numberize(nums[nums.length-1]);
-        if(v>best) best = v;
+  for(let idx=0; idx<lines.length; idx++){
+    for(const sp of STATUS_PATTERNS){
+      const merged = lines[idx] + " " + (lines[idx+1] || "");
+      if(sp.re.test(lines[idx]) || sp.re.test(merged)){
+        const v = findNumberNear(lines, idx, 2);
+        pageStageTotals[sp.key] = Math.max(pageStageTotals[sp.key]||0, v);
       }
     }
-    pageStageTotals[sp.key] = best;
   }
   for(const k of Object.keys(pageStageTotals)){
     if((stages[k]||0)===0 && pageStageTotals[k]>0){
@@ -408,7 +438,7 @@ function computeDynamics(curr, prev){
   const makeRows = (cPage, pPage) => BRANCHES.map(b=>{
     const c = cPage.branches.get(b)?.total || 0;
     const p = pPage.branches.get(b)?.total || 0;
-    return {b, p, c, d: (c - p)}; // жёстко ТЕК − ПРЕД
+    return {b, p, c, d: (c - p)}; // ТЕК − ПРЕД
   });
 
   const branchRows   = makeRows(curr.p2, prev.p2);
@@ -430,7 +460,7 @@ function computeDynamics(curr, prev){
   }));
 
   const stagesS2 = diffStages(curr.p2.stages||{}, prev.p2.stages||{});
-  const stagesS3 = diffStages(curr.p3.stages||{}, prev.p3.stages||{}); // 425 — исправлено
+  const stagesS3 = diffStages(curr.p3.stages||{}, prev.p3.stages||{}); // 425 — учитывает «после подписания»
   const stagesS4 = diffStages(curr.p4.stages||{}, prev.p4.stages||{});
 
   return {
@@ -467,7 +497,6 @@ function renderKpis(curr, prev, dyn){
   }).join("");
 }
 
-/* Перерисовка таблиц — Δ пересчитываем локально как ТЕК − ПРЕД (жёстко) */
 function renderBranchesTable(rows, tbodySel, sumPrevId, sumCurrId, sumDeltaId){
   const tbody = document.querySelector(tbodySel);
   tbody.innerHTML = "";
@@ -760,7 +789,7 @@ async function exportBriefPDF(){
   el.style.display = "none";
 }
 
-/* ===== PPTX / DOCX (оставляем, как было у тебя) ===== */
+/* ===== PPTX / DOCX (оставляем как было) ===== */
 async function exportPresPPTX(curr, prev, dyn, rows){
   try {
     const pptx = new PptxGenJS();
