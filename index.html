@@ -39,12 +39,27 @@
   tfoot td{font-weight:800}
   .exports{display:flex;flex-wrap:wrap;gap:10px}
   .hr{height:1px;background:var(--border);margin:12px 0}
-  #presentationPrint,#summaryPrint{background:#fff;padding:20px}
-  .logoTitle{font-weight:800;color:#0033A0;font-size:22px;margin-bottom:6px}
+  #presentationPrint,#summaryPrint{background:#fff;padding:16px 18px}
+  .logoTitle{font-weight:800;color:#0033A0;font-size:20px;margin-bottom:6px}
   .note{font-size:12px;color:#5f6b7a}
   .loading{display:none;color:#0033A0;font-weight:600;margin-top:10px}
   .loading.active{display:block}
   .error{color:#b00020;font-weight:600;margin-top:10px}
+
+  /* Компактная полиграфия */
+  .section{break-inside: avoid; page-break-inside: avoid}
+  .avoid-break{break-inside: avoid; page-break-inside: avoid}
+  .compact table{font-size:11px}
+  .compact .hr{margin:6px 0}
+  .planfact-wrap{overflow:hidden}
+  .planfact-scale{transform-origin: top left; transform: scale(0.92); width:108%}
+
+  @media print{
+    body{background:#fff}
+    #presentationPrint,#summaryPrint{padding:10mm}
+    .logoTitle{font-size:18px}
+    .compact table{font-size:10px}
+  }
 </style>
 </head>
 <body>
@@ -146,7 +161,7 @@
   </section>
 </div>
 
-<!-- Таблицы стадий (как в твоей версии UI — S2 и S4) -->
+<!-- Таблицы стадий (S2 и S4 в UI; S3 выводим в презентации/выжимке полностью) -->
 <div class="container grid cols-3">
   <section class="card">
     <h2>Стр. 2 — Стадии (прирост, неделя к неделе)</h2>
@@ -169,41 +184,41 @@
 </div>
 
 <!-- Печатные области -->
-<div id="presentationPrint" style="display:none">
+<div id="presentationPrint" class="compact" style="display:none">
   <div class="logoTitle">АО «Россети Кубань» — Презентация (еженедельная динамика ВОЛС)</div>
 
   <!-- План–Факт (как есть из Google Sheets) -->
-  <div id="presPlanFactTop" style="margin:6px 0"></div>
+  <div id="presPlanFactTop" class="planfact-wrap section"><div class="planfact-scale" id="presPlanFactInner"></div></div>
 
-  <div id="presDates" class="note" style="margin-bottom:8px"></div>
-  <div id="presKpis"></div>
+  <div id="presDates" class="note" style="margin:4px 0 8px"></div>
+  <div id="presKpis" class="section"></div>
   <div class="hr"></div>
 
   <!-- Стр.2 → «Динамика по филиалам (всего)» -->
-  <div id="presTable"></div>
+  <div id="presTable" class="section avoid-break"></div>
   <div class="hr"></div>
 
   <!-- Новые блоки: динамика стр.3 и стр.4 -->
-  <div id="presTableS3"></div>
+  <div id="presTableS3" class="section avoid-break"></div>
   <div class="hr"></div>
-  <div id="presTableS4"></div>
+  <div id="presTableS4" class="section avoid-break"></div>
   <div class="hr"></div>
 
   <!-- Все стадии (2/3/4) -->
-  <div id="presStages"></div>
+  <div id="presStages" class="section avoid-break"></div>
   <div class="hr"></div>
 
-  <div id="presInsights"></div>
+  <div id="presInsights" class="section"></div>
 </div>
 
-<div id="summaryPrint" style="display:none">
+<div id="summaryPrint" class="compact" style="display:none">
   <div class="logoTitle">Краткая выжимка для руководителя</div>
 
   <!-- План–Факт (как есть из Google Sheets) -->
-  <div id="briefPlanFactTop" style="margin:6px 0"></div>
+  <div id="briefPlanFactTop" class="planfact-wrap section"><div class="planfact-scale" id="briefPlanFactInner"></div></div>
 
-  <div id="briefDates" class="note" style="margin-bottom:8px"></div>
-  <div id="briefBlocks"></div>
+  <div id="briefDates" class="note" style="margin:4px 0 8px"></div>
+  <div id="briefBlocks" class="section"></div>
 </div>
 
 <!-- Библиотеки -->
@@ -241,10 +256,12 @@ const STATUS_PATTERNS = [
   {key:"rc_digit",   title:"Договор на оформлении Россети Цифра", re:/Договор\s*на\s*оформлении\s*Россети\s*Цифра/i},
   {key:"op_sign",    title:"Договор на подписании у оператора",   re:/Договор\s*на\s*подписании\s*у\s*оператора/i},
   {key:"filial_appr",title:"Договор на согласовании в филиале",   re:/Договор\s*на\s*согласовании\s*в\s*филиале/i},
-  {key:"incl_next",  title:"Будет включено в следующее доп. соглашение", re:/Будет\s*включено[\s\S]*?соглашение/i},
+  /* УСИЛЕННЫЙ регэксп под разные написания «доп. соглашение» */
+  {key:"incl_next",  title:"Будет включено в следующее доп. соглашение",
+   re:/Будет\s*включено(?:\s*в)?\s*следующ[её][\w\-]*\s*доп(?:\.|олнительн\w*)?\s*соглашени[еяиюе]/i},
 ];
 
-const numberize = s => Number(String(s||"").replace(/[^\d]/g,"")) || 0;
+const numberize = s => Number(String(s||"").replace(/[^\d\-]/g,"")) || 0;
 const fmt = n => n.toLocaleString("ru-RU");
 
 function normalize(txt){
@@ -295,6 +312,7 @@ function parseTotalsFromPage(page1){
   };
 }
 
+/* — основная таблица филиалов + статусы по филиалам */
 function parseBranchTable(pageText) {
   const text = normalize(pageText);
   const lines = text.split("\n").filter(Boolean);
@@ -332,12 +350,38 @@ function parseBranchTable(pageText) {
     }
   }
 
+  // гарантируем наличие всех филиалов
   for(const b of BRANCHES){ if(!branches.has(b)) branches.set(b,{total:0,statuses:{}}); }
-  const overall = [...branches.values()].reduce((s,r)=>s+(r.total||0),0);
+
+  // суммарные стадии по филиалам
   const stages = {};
   for(const v of branches.values()){
     for(const [k,val] of Object.entries(v.statuses)) stages[k]=(stages[k]||0)+val;
   }
+
+  /* РЕЗЕРВНЫЙ ПАРС СТАДИЙ С ВЕСЬ СТРАНИЦЫ (если по филиалам нули),
+     чтобы не терялась строка «Будет включено...» и др. */
+  const pageStageTotals = {};
+  for(const sp of STATUS_PATTERNS){
+    const re = sp.re;
+    const matches = lines.filter(l => re.test(l));
+    let best = 0;
+    for(const m of matches){
+      const nums = m.match(/\d[\d\s]*/g);
+      if(nums && nums.length){
+        const v = numberize(nums[nums.length-1]);
+        if(v>best) best = v;
+      }
+    }
+    pageStageTotals[sp.key] = best;
+  }
+  for(const k of Object.keys(pageStageTotals)){
+    if((stages[k]||0)===0 && pageStageTotals[k]>0){
+      stages[k] = pageStageTotals[k];
+    }
+  }
+
+  const overall = [...branches.values()].reduce((s,r)=>s+(r.total||0),0);
   return { branches, overall, stages };
 }
 
@@ -364,15 +408,13 @@ function computeDynamics(curr, prev){
   const makeRows = (cPage, pPage) => BRANCHES.map(b=>{
     const c = cPage.branches.get(b)?.total || 0;
     const p = pPage.branches.get(b)?.total || 0;
-    return {b, p, c, d: c - p};
+    return {b, p, c, d: (c - p)}; // жёстко ТЕК − ПРЕД
   });
 
-  // Δ по филиалам для стр.2/3/4
   const branchRows   = makeRows(curr.p2, prev.p2);
   const branchRowsS3 = makeRows(curr.p3, prev.p3);
   const branchRowsS4 = makeRows(curr.p4, prev.p4);
 
-  // Δ по стадиям для стр.2/3/4 — показываем все стадии (включая нули)
   const title = k => (STATUS_PATTERNS.find(s=>s.key===k)||{}).title||k;
   const allKeys = Array.from(new Set([
     ...Object.keys(prev.p2.stages||{}), ...Object.keys(curr.p2.stages||{}),
@@ -380,7 +422,6 @@ function computeDynamics(curr, prev){
     ...Object.keys(prev.p4.stages||{}), ...Object.keys(curr.p4.stages||{}),
     ...STATUS_PATTERNS.map(s=>s.key)
   ]));
-
   const diffStages = (cur, prv) => allKeys.map(k=>({
     stage: title(k), key: k,
     p: prv[k] || 0,
@@ -389,7 +430,7 @@ function computeDynamics(curr, prev){
   }));
 
   const stagesS2 = diffStages(curr.p2.stages||{}, prev.p2.stages||{});
-  const stagesS3 = diffStages(curr.p3.stages||{}, prev.p3.stages||{}); // ВАЖНО: стр.3 починена
+  const stagesS3 = diffStages(curr.p3.stages||{}, prev.p3.stages||{}); // 425 — исправлено
   const stagesS4 = diffStages(curr.p4.stages||{}, prev.p4.stages||{});
 
   return {
@@ -409,7 +450,6 @@ function renderKpis(curr, prev, dyn){
   const rtkShare = curr.p1.totals.in_work_total
       ? (curr.p1.totals.rtk_in_work / curr.p1.totals.in_work_total * 100) : 0;
 
-  // БЕЗ «коэф. эффективности недели»
   const items = [
     {title:"В работе всего, шт.", curr:curr.p1.totals.in_work_total, delta:dyn.in_work_total},
     {title:"Выявлено за неделю, шт.", curr:dyn.found_week, delta:dyn.found_week},
@@ -427,16 +467,19 @@ function renderKpis(curr, prev, dyn){
   }).join("");
 }
 
+/* Перерисовка таблиц — Δ пересчитываем локально как ТЕК − ПРЕД (жёстко) */
 function renderBranchesTable(rows, tbodySel, sumPrevId, sumCurrId, sumDeltaId){
   const tbody = document.querySelector(tbodySel);
   tbody.innerHTML = "";
   let sP=0,sC=0,sD=0;
-  const sorted = [...rows].sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
-  for(const r of sorted){
-    const cls = r.d>0?"up":(r.d<0?"down":"muted");
-    sP+=r.p; sC+=r.c; sD+=r.d;
+  const sorted = [...rows].sort((a,b)=>Math.abs((b.c-b.p)) - Math.abs((a.c-a.p)));
+  for(const r0 of sorted){
+    const p = Number(r0.p)||0, c = Number(r0.c)||0;
+    const d = c - p;
+    const cls = d>0?"up":(d<0?"down":"muted");
+    sP+=p; sC+=c; sD+=d;
     tbody.insertAdjacentHTML("beforeend",
-      `<tr><td>${r.b}</td><td>${fmt(r.p)}</td><td>${fmt(r.c)}</td><td class="${cls}">${r.d>0?"+":""}${fmt(r.d)}</td></tr>`);
+      `<tr><td>${r0.b}</td><td>${fmt(p)}</td><td>${fmt(c)}</td><td class="${cls}">${d>0?"+":""}${fmt(d)}</td></tr>`);
   }
   document.getElementById(sumPrevId).textContent = fmt(sP);
   document.getElementById(sumCurrId).textContent = fmt(sC);
@@ -483,7 +526,7 @@ function renderCharts(curr, prev, dyn){
   });
 
   // Δ-гистограмма РТК
-  const rtkD = labels.map(b => dyn.rtkRows.find(x => x.b === b)?.d || 0);
+  const rtkD = labels.map(b => (dyn.rtkRows.find(x => x.b === b) || {c:0,p:0}).c - (dyn.rtkRows.find(x => x.b === b) || {c:0,p:0}).p);
   if(chartRTKDelta) chartRTKDelta.destroy();
   chartRTKDelta = new Chart(document.getElementById("chartRTKDelta"), {
     type:"bar",
@@ -497,8 +540,9 @@ function renderStagesTables(dyn){
   const fill = (id, rows) => {
     const tbody = document.querySelector(id + " tbody");
     tbody.innerHTML = rows.map(r=>{
-      const cls = r.d>0?"up":(r.d<0?"down":"muted");
-      return `<tr><td>${r.stage}</td><td>${fmt(r.p)}</td><td>${fmt(r.c)}</td><td class="${cls}">${r.d>0?"+":""}${fmt(r.d)}</td></tr>`;
+      const p = Number(r.p)||0, c = Number(r.c)||0, d = c - p;
+      const cls = d>0?"up":(d<0?"down":"muted");
+      return `<tr><td>${r.stage}</td><td>${fmt(p)}</td><td>${fmt(c)}</td><td class="${cls}">${d>0?"+":""}${fmt(d)}</td></tr>`;
     }).join("");
   };
   fill("#tblStagesS2", dyn.stagesS2);
@@ -508,29 +552,33 @@ function renderStagesTables(dyn){
 /* ===== Вспомогательная для стадий: показать все ===== */
 function expandAllStages(rows){
   const byKey = new Map((rows||[]).map(r => [r.key, r]));
-  return STATUS_PATTERNS.map(sp => byKey.get(sp.key) || {key: sp.key, stage: sp.title, p: 0, c: 0, d: 0});
+  return STATUS_PATTERNS.map(sp => {
+    const r = byKey.get(sp.key) || {key: sp.key, stage: sp.title, p: 0, c: 0, d: 0};
+    return { ...r, stage: sp.title };
+  });
 }
 
 /* ===== Презентация (HTML/PDF) ===== */
 function stageTbl(title, arr){
   return `
-    <div style="margin:10px 0 4px;font-weight:700">${title}</div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <div style="margin:8px 0 4px;font-weight:700">${title}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
       <thead><tr>
-        <th style="text-align:left;border-bottom:1px solid #e7edf5;padding:6px 4px">Стадия</th>
-        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:6px 4px">Пред.</th>
-        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:6px 4px">Тек.</th>
-        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:6px 4px">Δ</th>
+        <th style="text-align:left;border-bottom:1px solid #e7edf5;padding:4px">Стадия</th>
+        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:4px">Пред.</th>
+        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:4px">Тек.</th>
+        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:4px">Δ</th>
       </tr></thead>
       <tbody>
-        ${arr.map(r => `<tr>
-          <td style="padding:6px 4px">${r.stage}</td>
-          <td style="padding:6px 4px;text-align:right">${fmt(r.p)}</td>
-          <td style="padding:6px 4px;text-align:right">${fmt(r.c)}</td>
-          <td style="padding:6px 4px;text-align:right;color:${r.d > 0 ? '#0a7a2d' : (r.d < 0 ? '#b00020' : '#5f6b7a')}">
-            ${r.d > 0 ? '+' : ''}${fmt(r.d)}
-          </td>
-        </tr>`).join("")}
+        ${arr.map(r => {
+          const p=Number(r.p)||0,c=Number(r.c)||0,d=c-p;
+          return `<tr>
+            <td style="padding:4px">${r.stage}</td>
+            <td style="padding:4px;text-align:right">${fmt(p)}</td>
+            <td style="padding:4px;text-align:right">${fmt(c)}</td>
+            <td style="padding:4px;text-align:right;color:${d>0?'#0a7a2d':(d<0?'#b00020':'#5f6b7a')}">${d>0?'+':''}${fmt(d)}</td>
+          </tr>`;
+        }).join("")}
       </tbody>
     </table>`;
 }
@@ -538,27 +586,30 @@ function stageTbl(title, arr){
 function presTableHTML(title, rows, sumIds){
   return `
     <div style="font-weight:700;margin:8px 0">${title}</div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
       <thead><tr>
-        <th style="text-align:left;border-bottom:1px solid #e7edf5;padding:6px 4px">Филиал</th>
-        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:6px 4px">Пред.</th>
-        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:6px 4px">Тек.</th>
-        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:6px 4px">Δ</th>
+        <th style="text-align:left;border-bottom:1px solid #e7edf5;padding:4px">Филиал</th>
+        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:4px">Пред.</th>
+        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:4px">Тек.</th>
+        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:4px">Δ</th>
       </tr></thead>
       <tbody>
-        ${rows.map(r => `<tr>
-          <td style="padding:6px 4px">${r.b}</td>
-          <td style="padding:6px 4px;text-align:right">${fmt(r.p)}</td>
-          <td style="padding:6px 4px;text-align:right">${fmt(r.c)}</td>
-          <td style="padding:6px 4px;text-align:right;color:${r.d>0?'#0a7a2d':(r.d<0?'#b00020':'#5f6b7a')}">${r.d>0?'+':''}${fmt(r.d)}</td>
-        </tr>`).join("")}
+        ${rows.map(r => {
+          const p=Number(r.p)||0,c=Number(r.c)||0,d=c-p;
+          return `<tr>
+            <td style="padding:4px">${r.b}</td>
+            <td style="padding:4px;text-align:right">${fmt(p)}</td>
+            <td style="padding:4px;text-align:right">${fmt(c)}</td>
+            <td style="padding:4px;text-align:right;color:${d>0?'#0a7a2d':(d<0?'#b00020':'#5f6b7a')}">${d>0?'+':''}${fmt(d)}</td>
+          </tr>`;
+        }).join("")}
       </tbody>
       <tfoot>
         <tr>
-          <td style="padding:6px 4px;font-weight:800">Итого</td>
-          <td style="padding:6px 4px;text-align:right;font-weight:800">${document.getElementById(sumIds[0]).textContent}</td>
-          <td style="padding:6px 4px;text-align:right;font-weight:800">${document.getElementById(sumIds[1]).textContent}</td>
-          <td style="padding:6px 4px;text-align:right;font-weight:800">${document.getElementById(sumIds[2]).textContent}</td>
+          <td style="padding:4px;font-weight:800">Итого</td>
+          <td style="padding:4px;text-align:right;font-weight:800">${document.getElementById(sumIds[0]).textContent}</td>
+          <td style="padding:4px;text-align:right;font-weight:800">${document.getElementById(sumIds[1]).textContent}</td>
+          <td style="padding:4px;text-align:right;font-weight:800">${document.getElementById(sumIds[2]).textContent}</td>
         </tr>
       </tfoot>
     </table>`;
@@ -573,10 +624,10 @@ function buildPresentationHTML(curr, prev, dyn){
     (curr.p1.totals.rtk_in_work / curr.p1.totals.in_work_total * 100) : 0;
 
   const box = (t, val, delta) => `
-    <div style="border:1px solid #e7edf5;border-radius:10px;padding:10px;margin:6px 0">
-      <div style="color:#5f6b7a;font-size:12px">${t}</div>
-      <div style="font-weight:800;font-size:18px">${typeof val === "number" ? fmt(val) : val}</div>
-      <div style="font-size:12px;color:${delta > 0 ? '#0a7a2d' : (delta < 0 ? '#b00020' : '#5f6b7a')}">
+    <div style="border:1px solid #e7edf5;border-radius:8px;padding:8px;margin:4px 0">
+      <div style="color:#5f6b7a;font-size:11px">${t}</div>
+      <div style="font-weight:800;font-size:16px">${typeof val === "number" ? fmt(val) : val}</div>
+      <div style="font-size:11px;color:${delta > 0 ? '#0a7a2d' : (delta < 0 ? '#b00020' : '#5f6b7a')}">
         ${delta > 0 ? '+' : ''}${fmt(delta)} неделя к неделе
       </div>
     </div>`;
@@ -604,7 +655,7 @@ function buildPresentationHTML(curr, prev, dyn){
   const rowsS4 = (dyn.branchRowsS4||[]);
   document.getElementById("presTableS4").innerHTML = presTableHTML("Динамика выявления по Ростелекому", rowsS4, ["sumPrevS4","sumCurrS4","sumDeltaS4"]);
 
-  // Все стадии (расширяем до полного списка, чтобы не пропадали)
+  // Все стадии
   const s2all = expandAllStages(dyn.stagesS2);
   const s3all = expandAllStages(dyn.stagesS3);
   const s4all = expandAllStages(dyn.stagesS4);
@@ -619,7 +670,10 @@ function buildPresentationHTML(curr, prev, dyn){
 function buildSummaryBlocks(curr, prev, dyn){
   const blocks = document.getElementById("briefBlocks");
   const eff = (curr.p1.totals.legalized + curr.p1.totals.dismantled_ytd) - (prev.p1.totals.legalized + prev.p1.totals.dismantled_ytd);
-  const listAll = rows => rows.map(r=>`• ${r.b}: ${fmt(r.p)} → <b>${fmt(r.c)}</b> (${r.d>0?'+':''}${fmt(r.d)})`).join("<br/>");
+  const listAll = rows => rows.map(r=>{
+    const p=Number(r.p)||0,c=Number(r.c)||0,d=c-p;
+    return `• ${r.b}: ${fmt(p)} → <b>${fmt(c)}</b> (${d>0?'+':''}${fmt(d)})`;
+  }).join("<br/>");
 
   blocks.innerHTML = `
     <h3>Стр. 1 — Общая (нарастающим)</h3>
@@ -641,10 +695,16 @@ function buildSummaryBlocks(curr, prev, dyn){
     <div style="margin-top:6px"><b>Итого:</b> Пред. ${document.getElementById("sumPrevS4").textContent}; Тек. ${document.getElementById("sumCurrS4").textContent}; Δ ${document.getElementById("sumDeltaS4").textContent}</div>
     <hr/>
     <h3>Стадии — Динамика выявления по 425 Приказу</h3>
-    <div>${expandAllStages(dyn.stagesS3||[]).map(s=>`• ${s.stage}: ${fmt(s.p)} → <b>${fmt(s.c)}</b> (${s.d>0?'+':''}${fmt(s.d)})`).join("<br/>")}</div>
+    <div>${expandAllStages(dyn.stagesS3||[]).map(s=>{
+      const p=Number(s.p)||0,c=Number(s.c)||0,d=c-p;
+      return `• ${s.stage}: ${fmt(p)} → <b>${fmt(c)}</b> (${d>0?'+':''}${fmt(d)})`;
+    }).join("<br/>")}</div>
     <hr/>
     <h3>Стадии — Динамика выявления по Ростелекому</h3>
-    <div>${expandAllStages(dyn.stagesS4||[]).map(s=>`• ${s.stage}: ${fmt(s.p)} → <b>${fmt(s.c)}</b> (${s.d>0?'+':''}${fmt(s.d)})`).join("<br/>")}</div>
+    <div>${expandAllStages(dyn.stagesS4||[]).map(s=>{
+      const p=Number(s.p)||0,c=Number(s.c)||0,d=c-p;
+      return `• ${s.stage}: ${fmt(p)} → <b>${fmt(c)}</b> (${d>0?'+':''}${fmt(d)})`;
+    }).join("<br/>")}</div>
   `;
 }
 
@@ -661,14 +721,14 @@ async function injectPlanFactHTML(){
     const table = tmp.querySelector("table");
     if(!table){ throw new Error("Таблица не найдена в HTML ответе."); }
 
-    const caption = `<div style="font-weight:700;margin:8px 0">План–Факт (таблица из Google Sheets)</div>`;
-    document.getElementById("presPlanFactTop").innerHTML = caption + table.outerHTML;
-    document.getElementById("briefPlanFactTop").innerHTML = caption + table.outerHTML;
+    const caption = `<div style="font-weight:700;margin:6px 0 4px">План–Факт (таблица из Google Sheets)</div>`;
+    document.getElementById("presPlanFactInner").innerHTML = caption + table.outerHTML;
+    document.getElementById("briefPlanFactInner").innerHTML = caption + table.outerHTML;
   }catch(e){
     console.warn("Не удалось вставить таблицу Google Sheets:", e);
     const fallback = `<div class="note">План–Факт: не удалось получить HTML таблицы. <a href="https://docs.google.com/spreadsheets/d/1Y9bM7zLRf_gonMUgfQLl57Iu3NgPa78rBXnpxkKLvO0/edit?usp=drivesdk" target="_blank" rel="noopener">Открыть по ссылке</a></div>`;
-    document.getElementById("presPlanFactTop").innerHTML = fallback;
-    document.getElementById("briefPlanFactTop").innerHTML = fallback;
+    document.getElementById("presPlanFactInner").innerHTML = fallback;
+    document.getElementById("briefPlanFactInner").innerHTML = fallback;
   }
 }
 
@@ -677,8 +737,12 @@ async function exportPresPDF(){
   const el = document.getElementById("presentationPrint");
   el.style.display = "block";
   await html2pdf().from(el).set({
-    margin:10, filename:"Презентация_ВОЛС.pdf",
-    image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'mm',format:'a4'}
+    margin: 8,
+    filename: "Презентация_ВОЛС.pdf",
+    image: {type: 'jpeg', quality: 0.98},
+    html2canvas: {scale: 2.2, useCORS: true},
+    jsPDF: {unit: 'mm', format: 'a4', compress: true},
+    pagebreak: { mode: ['css','legacy'], avoid: ['tr','.avoid-break'] }
   }).save();
   el.style.display = "none";
 }
@@ -686,13 +750,17 @@ async function exportBriefPDF(){
   const el = document.getElementById("summaryPrint");
   el.style.display = "block";
   await html2pdf().from(el).set({
-    margin: 10, filename: "Выжимка_ВОЛС.pdf",
-    image: {type: 'jpeg', quality: 0.98}, html2canvas: {scale: 2}, jsPDF: {unit: 'mm', format: 'a4'}
+    margin: 8,
+    filename: "Выжимка_ВОЛС.pdf",
+    image: {type: 'jpeg', quality: 0.98},
+    html2canvas: {scale: 2.2, useCORS: true},
+    jsPDF: {unit: 'mm', format: 'a4', compress: true},
+    pagebreak: { mode: ['css','legacy'], avoid: ['tr','.avoid-break'] }
   }).save();
   el.style.display = "none";
 }
 
-/* ===== PPTX / DOCX (как у тебя) ===== */
+/* ===== PPTX / DOCX (оставляем, как было у тебя) ===== */
 async function exportPresPPTX(curr, prev, dyn, rows){
   try {
     const pptx = new PptxGenJS();
@@ -727,7 +795,7 @@ async function exportPresPPTX(curr, prev, dyn, rows){
        {text: "Пред.", options: {bold: true}}, 
        {text: "Тек.", options: {bold: true}}, 
        {text: "Δ", options: {bold: true}}],
-      ...rows.map(r => [r.b, fmt(r.p), fmt(r.c), (r.d > 0 ? '+' : '') + fmt(r.d)]),
+      ...rows.map(r => [r.b, fmt(r.p), fmt(r.c), ( (r.c-r.p)>0 ? '+' : '') + fmt(r.c-r.p)]),
       ["Итого", 
        document.getElementById("sumPrev").textContent, 
        document.getElementById("sumCurr").textContent, 
@@ -742,7 +810,7 @@ async function exportPresPPTX(curr, prev, dyn, rows){
        {text: "Пред.", options: {bold: true}}, 
        {text: "Тек.", options: {bold: true}}, 
        {text: "Δ", options: {bold: true}}],
-      ...rtkRows.map(r => [r.b, fmt(r.p), fmt(r.c), (r.d > 0 ? '+' : '') + fmt(r.d)])
+      ...rtkRows.map(r => [r.b, fmt(r.p), fmt(r.c), ((r.c-r.p)>0?'+':'') + fmt(r.c-r.p)])
     ], {x: 0.5, y: 1.0, w: 9.0, border: {pt: 1, color: "DDDDDD"}, fill: "FFFFFF"});
 
     await pptx.writeFile({fileName: "Презентация_ВОЛС.pptx"});
@@ -781,7 +849,7 @@ async function exportBriefDOCX(curr, prev, dyn, rows){
             width: {size: 100, type: WidthType.PERCENTAGE},
             rows: [
               tr(["Филиал","Пред.","Тек.","Δ"], true),
-              ...rows.map(r => tr([r.b, fmt(r.p), fmt(r.c), (r.d > 0 ? '+' : '') + fmt(r.d)])),
+              ...rows.map(r => tr([r.b, fmt(r.p), fmt(r.c), ((r.c-r.p)>0?'+':'') + fmt(r.c-r.p)])),
               tr(["Итого", document.getElementById("sumPrev").textContent, document.getElementById("sumCurr").textContent, document.getElementById("sumDelta").textContent], true)
             ]
           }),
@@ -791,7 +859,7 @@ async function exportBriefDOCX(curr, prev, dyn, rows){
             width: {size: 100, type: WidthType.PERCENTAGE},
             rows: [
               tr(["Филиал","Пред.","Тек.","Δ"], true),
-              ...(DATA?.dyn?.branchRowsS4||[]).map(r => tr([r.b, fmt(r.p), fmt(r.c), (r.d > 0 ? '+' : '') + fmt(r.d)]))
+              ...(DATA?.dyn?.branchRowsS4||[]).map(r => tr([r.b, fmt(r.p), fmt(r.c), ((r.c-r.p)>0?'+':'') + fmt(r.c-r.p)]))
             ]
           }),
         ]
