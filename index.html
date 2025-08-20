@@ -161,7 +161,7 @@
   </section>
 </div>
 
-<!-- Таблицы стадий (S2 и S4 в UI; S3 выводим в презентации/выжимке полностью) -->
+<!-- Таблицы стадий (S2 и S4 в интерфейсе; S3 покажем в печатных блоках полностью) -->
 <div class="container grid cols-3">
   <section class="card">
     <h2>Стр. 2 — Стадии (прирост, неделя к неделе)</h2>
@@ -186,8 +186,6 @@
 <!-- Печатные области -->
 <div id="presentationPrint" class="compact" style="display:none">
   <div class="logoTitle">АО «Россети Кубань» — Презентация (еженедельная динамика ВОЛС)</div>
-
-  <!-- План–Факт (как есть из Google Sheets) -->
   <div id="presPlanFactTop" class="planfact-wrap section"><div class="planfact-scale" id="presPlanFactInner"></div></div>
 
   <div id="presDates" class="note" style="margin:4px 0 8px"></div>
@@ -213,8 +211,6 @@
 
 <div id="summaryPrint" class="compact" style="display:none">
   <div class="logoTitle">Краткая выжимка для руководителя</div>
-
-  <!-- План–Факт (как есть из Google Sheets) -->
   <div id="briefPlanFactTop" class="planfact-wrap section"><div class="planfact-scale" id="briefPlanFactInner"></div></div>
 
   <div id="briefDates" class="note" style="margin:4px 0 8px"></div>
@@ -250,7 +246,7 @@ const BRANCH_PATTERNS = [
   {name:"Славянские ЭС",     re:/Славянские\s+ЭС/i},
 ];
 
-/* === ВАЖНО: стадия «Будет включено ... после подписания» — расширенный паттерн === */
+/* === Стадии: улучшенный паттерн «Будет включено … (после подписания)» === */
 const STATUS_PATTERNS = [
   {key:"work",       title:"В работе у филиала",         re:/В\s*работе\s*у\s*филиала/i},
   {key:"dismantled", title:"Демонтировано",              re:/Демонтировано/i},
@@ -260,9 +256,8 @@ const STATUS_PATTERNS = [
   {
     key:"incl_next",
     title:"Будет включено в следующее доп. соглашение после подписания",
-    /* ловим: «Будет включено (в) следующее(е) доп.,/дополнительное соглашение [после подписания]»,
-       допускаем перенос на следующую строку */
-    re:/Будет\s*включено(?:\s*в)?\s*следующ[её][\w\-]*\s*доп(?:\.|олнительн\w*)?\s*соглашени[еяиюе](?:\s*после\s*подписан[ияие])?/i
+    // допускаем «в/во», «следующ(ее/ем)», «доп./дополнительное», «соглашение/соглашении», опционально «после подписания ...»
+    re:/Будет\s*включено(?:\s*в|во)?\s*следующ[её](?:е|ем)?\s*доп(?:\.|олнительн\w*)?\s*соглашен[иеия][\w\s\-–—]*?(?:после\s*подписан[ияие][\w\s\-–—]*)?/i
   },
 ];
 
@@ -317,21 +312,45 @@ function parseTotalsFromPage(page1){
   };
 }
 
-/* === Вспомогательные для статусов с переносом строки === */
+/* === Вспомогательные для статусов с переносом/табличной вёрсткой === */
 function isBranchHeader(line){ return BRANCH_PATTERNS.some(bp => bp.re.test(line)); }
-function findNumberNear(lines, idx, maxLookahead=2){
-  // Ищем число в текущей строке и в следующих maxLookahead строках (если нет заголовка филиала)
-  for(let k=0;k<=maxLookahead;k++){
-    const i = idx + k;
-    if(i>=lines.length) break;
-    const ln = lines[i];
-    if(k>0 && isBranchHeader(ln)) break; // не выходим за следующий филиал
-    const nums = ln.match(/\d[\d\s\-]*/g);
+
+/** Ищем число рядом с индексом idx:
+ *  - сначала в текущей строке
+ *  - затем в 1..lookNext строках вперёд (до следующего филиала)
+ *  - затем в 1..lookPrev строках назад
+ * Это покрывает случаи, когда число в отдельном левом/правом столбце. */
+function findNumberNear(lines, idx, lookPrev=2, lookNext=2){
+  const tryLine = (i) => {
+    if(i<0 || i>=lines.length) return 0;
+    const nums = lines[i].match(/\d[\d\s\-]*/g);
     if(nums && nums.length){
-      const val = numberize(nums[nums.length-1]);
+      // берём «самое численное» в строке (обычно последний столбец)
+      const cand = nums.map(numberize).filter(v=>!Number.isNaN(v));
+      const val = cand.length ? cand[cand.length-1] : 0;
       if(val!==0) return val;
     }
+    return 0;
+  };
+
+  // текущая
+  let val = tryLine(idx);
+  if(val) return val;
+
+  // вперёд, но не заходим в следующий филиал
+  for(let k=1;k<=lookNext;k++){
+    const i = idx + k; if(i>=lines.length) break;
+    if(isBranchHeader(lines[i])) break;
+    val = tryLine(i); if(val) return val;
   }
+
+  // назад (на случай, когда цифра «слева», а текст стадии справа)
+  for(let k=1;k<=lookPrev;k++){
+    const i = idx - k; if(i<0) break;
+    // назад филиальный заголовок нам не мешает — это всё та же вкладка-строка
+    val = tryLine(i); if(val) return val;
+  }
+
   return 0;
 }
 
@@ -362,16 +381,18 @@ function parseBranchTable(pageText) {
 
     // блок статусов этого филиала
     let j=i+1;
-    while(j<lines.length && j<i+14){
+    while(j<lines.length && j<i+18){
       const ln = lines[j];
       if(isBranchHeader(ln)) break;
 
-      // проверяем каждую стадию; допускаем, что название и число на следующей строке
+      // проверяем каждую стадию; допускаем переносы и «склейку» с соседними строками
       for(const sp of STATUS_PATTERNS){
-        const merged = ln + " " + (lines[j+1] || "");
-        if(sp.re.test(ln) || sp.re.test(merged)){
-          // число ищем в этой строке и ближайших двух (если перенос)
-          const value = findNumberNear(lines, j, 2);
+        const prev = lines[j-1] || "";
+        const next = lines[j+1] || "";
+        const mergedPrev = prev + " " + ln;
+        const mergedNext = ln + " " + next;
+        if(sp.re.test(ln) || sp.re.test(mergedNext) || sp.re.test(mergedPrev)){
+          const value = findNumberNear(lines, j, 2, 2);
           if(value>0){
             const obj = branches.get(branchName);
             if(!obj.statuses[sp.key] || obj.statuses[sp.key]===0){
@@ -394,13 +415,18 @@ function parseBranchTable(pageText) {
   }
 
   /* РЕЗЕРВНЫЙ ПАРС СТАДИЙ ПО ВСЕЙ СТРАНИЦЕ (если по филиалам нули),
-     учитываем перенос названия стадии на следующую строку И число на следующей строке */
+     учитываем перенос названия и число в соседних строках (в обе стороны) */
   const pageStageTotals = {};
   for(let idx=0; idx<lines.length; idx++){
     for(const sp of STATUS_PATTERNS){
-      const merged = lines[idx] + " " + (lines[idx+1] || "");
-      if(sp.re.test(lines[idx]) || sp.re.test(merged)){
-        const v = findNumberNear(lines, idx, 2);
+      const prev = lines[idx-1] || "";
+      const curr = lines[idx];
+      const next = lines[idx+1] || "";
+      const mergedPrev = prev + " " + curr;
+      const mergedNext = curr + " " + next;
+      if(sp.re.test(curr) || sp.re.test(mergedPrev) || sp.re.test(mergedNext)){
+        const v = findNumberNear(lines, idx, 2, 2);
+        // если уже что-то есть, берём max (чтобы не удвоить при повторах)
         pageStageTotals[sp.key] = Math.max(pageStageTotals[sp.key]||0, v);
       }
     }
@@ -460,7 +486,7 @@ function computeDynamics(curr, prev){
   }));
 
   const stagesS2 = diffStages(curr.p2.stages||{}, prev.p2.stages||{});
-  const stagesS3 = diffStages(curr.p3.stages||{}, prev.p3.stages||{}); // 425 — учитывает «после подписания»
+  const stagesS3 = diffStages(curr.p3.stages||{}, prev.p3.stages||{}); // 425 — с учётом «после подписания»
   const stagesS4 = diffStages(curr.p4.stages||{}, prev.p4.stages||{});
 
   return {
@@ -677,14 +703,14 @@ function buildPresentationHTML(curr, prev, dyn){
   document.getElementById("presTable").innerHTML = presTableHTML("Динамика по филиалам (всего)", rowsS2, ["sumPrev","sumCurr","sumDelta"]);
 
   // Таблица по стр.3 → «Динамика выявления по 425 Приказу»
-  const rowsS3 = (dyn.branchRowsS3||[]);
+  const rowsS3 = (DATA?.dyn?.branchRowsS3||[]);
   document.getElementById("presTableS3").innerHTML = presTableHTML("Динамика выявления по 425 Приказу", rowsS3, ["sumPrevS3","sumCurrS3","sumDeltaS3"]);
 
   // Таблица по стр.4 → «Динамика выявления по Ростелекому»
-  const rowsS4 = (dyn.branchRowsS4||[]);
+  const rowsS4 = (DATA?.dyn?.branchRowsS4||[]);
   document.getElementById("presTableS4").innerHTML = presTableHTML("Динамика выявления по Ростелекому", rowsS4, ["sumPrevS4","sumCurrS4","sumDeltaS4"]);
 
-  // Все стадии
+  // Все стадии (показываем полный набор)
   const s2all = expandAllStages(dyn.stagesS2);
   const s3all = expandAllStages(dyn.stagesS3);
   const s4all = expandAllStages(dyn.stagesS4);
@@ -739,7 +765,6 @@ function buildSummaryBlocks(curr, prev, dyn){
 
 /* ===== Google Sheets: «План–Факт» как есть ===== */
 const SHEET_HTML_URL = "https://docs.google.com/spreadsheets/d/1Y9bM7zLRf_gonMUgfQLl57Iu3NgPa78rBXnpxkKLvO0/gviz/tq?tqx=out:html";
-
 async function injectPlanFactHTML(){
   try{
     const res = await fetch(SHEET_HTML_URL, {cache:"no-store", mode:"cors"});
@@ -749,7 +774,6 @@ async function injectPlanFactHTML(){
     tmp.innerHTML = html;
     const table = tmp.querySelector("table");
     if(!table){ throw new Error("Таблица не найдена в HTML ответе."); }
-
     const caption = `<div style="font-weight:700;margin:6px 0 4px">План–Факт (таблица из Google Sheets)</div>`;
     document.getElementById("presPlanFactInner").innerHTML = caption + table.outerHTML;
     document.getElementById("briefPlanFactInner").innerHTML = caption + table.outerHTML;
@@ -789,7 +813,7 @@ async function exportBriefPDF(){
   el.style.display = "none";
 }
 
-/* ===== PPTX / DOCX (оставляем как было) ===== */
+/* ===== PPTX / DOCX (как было) ===== */
 async function exportPresPPTX(curr, prev, dyn, rows){
   try {
     const pptx = new PptxGenJS();
@@ -824,7 +848,7 @@ async function exportPresPPTX(curr, prev, dyn, rows){
        {text: "Пред.", options: {bold: true}}, 
        {text: "Тек.", options: {bold: true}}, 
        {text: "Δ", options: {bold: true}}],
-      ...rows.map(r => [r.b, fmt(r.p), fmt(r.c), ( (r.c-r.p)>0 ? '+' : '') + fmt(r.c-r.p)]),
+      ...rows.map(r => [r.b, fmt(r.p), fmt(r.c), ((r.c-r.p)>0?'+':'') + fmt(r.c-r.p)]),
       ["Итого", 
        document.getElementById("sumPrev").textContent, 
        document.getElementById("sumCurr").textContent, 
