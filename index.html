@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>ВОЛС — Еженедельная динамика (АО «Россети Кубань»)</title>
+<title>Динамика ВОЛС</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{--rs-blue:#0033A0;--rs-light:#f4f7fb;--border:#e7edf5;--ok:#0a7a2d;--bad:#b00020;--muted:#5f6b7a;--card:#fff}
@@ -45,15 +45,12 @@
   .loading{display:none;color:#0033A0;font-weight:600;margin-top:10px}
   .loading.active{display:block}
   .error{color:#b00020;font-weight:600;margin-top:10px}
-
-  /* Компактная полиграфия */
   .section{break-inside: avoid; page-break-inside: avoid}
   .avoid-break{break-inside: avoid; page-break-inside: avoid}
   .compact table{font-size:11px}
   .compact .hr{margin:6px 0}
   .planfact-wrap{overflow:hidden}
   .planfact-scale{transform-origin: top left; transform: scale(0.92); width:108%}
-
   @media print{
     body{background:#fff}
     #presentationPrint,#summaryPrint{padding:10mm}
@@ -96,7 +93,7 @@
   <div id="kpis" class="kpis"></div>
 </div>
 
-<!-- СТР. 2 -->
+<!-- Стр. 2 -->
 <div class="container grid cols-2">
   <section class="card">
     <h2>Стр. 2 — «Всего опор, шт.» по филиалам</h2>
@@ -115,7 +112,7 @@
   </section>
 </div>
 
-<!-- СТР. 3 -->
+<!-- Стр. 3 -->
 <div class="container grid cols-2">
   <section class="card">
     <h2>Стр. 3 — Приказ №425: «Всего опор, шт.» по филиалам</h2>
@@ -134,7 +131,7 @@
   </section>
 </div>
 
-<!-- СТР. 4 -->
+<!-- Стр. 4 -->
 <div class="container grid cols-2">
   <section class="card">
     <h2>Стр. 4 — ПАО «Ростелеком»: «Всего опор, шт.» по филиалам</h2>
@@ -153,7 +150,6 @@
   </section>
 </div>
 
-<!-- Δ-гистограмма РТК -->
 <div class="container">
   <section class="card">
     <h2>Стр. 4 — ПАО «Ростелеком»: Δ по филиалам</h2>
@@ -161,10 +157,10 @@
   </section>
 </div>
 
-<!-- Таблицы стадий (S2 и S4 в интерфейсе; S3 покажем в печатных блоках полностью) -->
+<!-- Стадии (интерфейс оставляем как было) -->
 <div class="container grid cols-3">
   <section class="card">
-    <h2>Стр. 2 — Стадии (прирост, неделя к неделе)</h2>
+    <h2>Стр. 2 — Стадии (прирост)</h2>
     <div style="max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:12px">
       <table id="tblStagesS2">
         <thead><tr><th>Стадия</th><th>Пред., шт.</th><th>Тек., шт.</th><th>Δ, шт.</th></tr></thead>
@@ -183,7 +179,7 @@
   </section>
 </div>
 
-<!-- Печатные области -->
+<!-- ПЕЧАТНЫЕ ОБЛАСТИ -->
 <div id="presentationPrint" class="compact" style="display:none">
   <div class="logoTitle">Динамика ВОЛС</div>
   <div id="presPlanFactTop" class="planfact-wrap section"><div class="planfact-scale" id="presPlanFactInner"></div></div>
@@ -192,17 +188,14 @@
   <div id="presKpis" class="section"></div>
   <div class="hr"></div>
 
-  <!-- Стр.2 → «Динамика по филиалам (всего)» -->
   <div id="presTable" class="section avoid-break"></div>
   <div class="hr"></div>
-
-  <!-- Новые блоки: динамика стр.3 и стр.4 -->
   <div id="presTableS3" class="section avoid-break"></div>
   <div class="hr"></div>
   <div id="presTableS4" class="section avoid-break"></div>
   <div class="hr"></div>
 
-  <!-- Все стадии (2/3/4) -->
+  <!-- Последний слайд: динамика статусов — только стр. 2 -->
   <div id="presStages" class="section avoid-break"></div>
   <div class="hr"></div>
 
@@ -246,27 +239,31 @@ const BRANCH_PATTERNS = [
   {name:"Славянские ЭС",     re:/Славянские\s+ЭС/i},
 ];
 
-/* === Стадии === */
+/* ——— Стадии — ключи и устойчивые шаблоны ——— */
 const STATUS_PATTERNS = [
   {key:"work",       title:"В работе у филиала",         re:/В\s*работе\s*у\s*филиала/i},
   {key:"dismantled", title:"Демонтировано",              re:/Демонтировано/i},
   {key:"rc_digit",   title:"Договор на оформлении Россети Цифра", re:/Договор\s*на\s*оформлении\s*Россети\s*Цифра/i},
   {key:"op_sign",    title:"Договор на подписании у оператора",   re:/Договор\s*на\s*подписании\s*у\s*оператора/i},
   {key:"filial_appr",title:"Договор на согласовании в филиале",   re:/Договор\s*на\s*согласовании\s*в\s*филиале/i},
-  {
-    key:"incl_next",
-    title:"Будет включено в следующее доп. соглашение после подписания",
-    re:/Будет\s*включено(?:\s*в|во)?\s*следующ[её](?:е|ем)?\s*доп(?:\.|олнительн\w*)?\s*соглашен[иеия][\w\s\-–—]*?(?:после\s*подписан[ияие][\w\s\-–—]*)?/i
+  {key:"incl_next",  title:"Будет включено в следующее доп. соглашение после подписания",
+    // допускаем переносы/варианты формулировок/пробелы, «доп.»/«доп»
+    re:/Будет\s*включено(?:[\s\S]{0,80})в(?:\s*следующее)?(?:[\s\S]{0,80})доп\.?\s*соглашение(?:[\s\S]{0,80}после\s*подписания)?/i
   },
 ];
+const STATUS_KEYS = STATUS_PATTERNS.map(s => s.key);
+const STAGE_TITLE = k => (STATUS_PATTERNS.find(s => s.key===k)||{}).title||k;
 
-const numberize = s => Number(String(s||"").replace(/[^\d\-]/g,"")) || 0;
+const numberize = s => {
+  const t = String(s||"").replace(/\u00A0|\u202F/g," ").replace(/[^\d\- ]/g,"").trim();
+  const n = t.replace(/\s+/g,"");
+  return n ? Number(n) : 0;
+};
 const fmt = n => n.toLocaleString("ru-RU");
 
 function normalize(txt){
   return String(txt||"")
-    .replace(/\u00A0/g," ")
-    .replace(/\u202F/g," ")
+    .replace(/\u00A0|\u202F/g," ")
     .replace(/\u00AD/g,"")
     .replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g,"-")
     .replace(/[ \t]+/g," ")
@@ -283,8 +280,9 @@ async function pdfToPages(file){
     const content = await page.getTextContent();
     let pageText = "", lastY = null;
     content.items.forEach(item => {
-      if(lastY !== null && Math.abs(item.transform[5] - lastY) > 5) pageText += "\n";
-      pageText += item.str; lastY = item.transform[5];
+      const y = item.transform[5];
+      if(lastY !== null && Math.abs(y - lastY) > 5) pageText += "\n";
+      pageText += item.str; lastY = y;
     });
     pages.push(normalize(pageText));
   }
@@ -311,106 +309,92 @@ function parseTotalsFromPage(page1){
   };
 }
 
-function isBranchHeader(line){ return BRANCH_PATTERNS.some(bp => bp.re.test(line)); }
-
-function findNumberNear(lines, idx, lookPrev=2, lookNext=2){
-  const tryLine = (i) => {
-    if(i<0 || i>=lines.length) return 0;
-    const nums = lines[i].match(/\d[\d\s\-]*/g);
-    if(nums && nums.length){
-      const cand = nums.map(numberize).filter(v=>!Number.isNaN(v));
-      const val = cand.length ? cand[cand.length-1] : 0;
-      if(val!==0) return val;
-    }
-    return 0;
-  };
-  let val = tryLine(idx); if(val) return val;
-  for(let k=1;k<=lookNext;k++){
-    const i = idx + k; if(i>=lines.length) break;
-    if(isBranchHeader(lines[i])) break;
-    val = tryLine(i); if(val) return val;
-  }
-  for(let k=1;k<=lookPrev;k++){
-    const i = idx - k; if(i<0) break;
-    val = tryLine(i); if(val) return val;
-  }
-  return 0;
-}
-
-function parseBranchTable(pageText) {
+/* ==== ВАЖНО: новый устойчивый парсер таблиц по филиалам ==== */
+/* Идея:
+   1) разбиваем страницу на строки;
+   2) выделяем "сегмент" текста для каждого филиала — от его строки до строки следующего филиала;
+   3) в сегменте ищем:
+      - total: первое число рядом с названием филиала;
+      - статусы: число "после" подписи статуса, допускаем разрывы строк.
+*/
+function parseBranchTable(pageText){
   const text = normalize(pageText);
   const lines = text.split("\n").filter(Boolean);
-  const branches = new Map();
 
+  // Находим все индексы строк с названиями филиалов
+  const idx = [];
   for(let i=0;i<lines.length;i++){
     const line = lines[i];
-    let branchName = null;
-    for(const bp of BRANCH_PATTERNS){ if(bp.re.test(line)){ branchName = bp.name; break; } }
+    for(const bp of BRANCH_PATTERNS){
+      if(bp.re.test(line)){
+        idx.push({i, name: bp.name});
+        break;
+      }
+    }
+  }
+  // Добавим "хвост" для последнего сегмента
+  idx.push({i: lines.length, name:null});
+
+  const branches = new Map();
+
+  for(let k=0;k<idx.length-1;k++){
+    const start = idx[k].i;
+    const end   = idx[k+1].i;
+    const branchName = idx[k].name;
     if(!branchName) continue;
 
+    const headLine = lines[start] || "";
+    const segText  = lines.slice(start+1, end).join(" "); // объединяем — статус может быть с переносами
+
+    // total — берем число рядом с названием филиала (в его строке) или на следующей строке
     let total = 0;
-    const n1 = line.match(/\d[\d\s]*/g);
-    if(n1 && n1.length) total = numberize(n1[n1.length-1]);
-    if(total===0 && lines[i+1]){
-      const n2 = lines[i+1].match(/\d[\d\s]*/g);
-      if(n2 && n2.length) total = numberize(n2[0]);
+    const headNums = headLine.match(/\d[\d\s]*/g);
+    if(headNums && headNums.length) total = numberize(headNums[headNums.length-1]);
+    if(total===0 && lines[start+1]){
+      const n2 = (lines[start+1]||"").match(/\d[\d\s]*/g);
+      if(n2 && n2.length) total = numberize(n2[n2.length-1]);
     }
 
-    if(!branches.has(branchName) || branches.get(branchName).total===0){
-      branches.set(branchName,{ total, statuses:{} });
+    const data = { total, statuses:{} };
+
+    // Функция: число сразу после подписи статуса (с допуском 0..200 символов, без цифр)
+    function numAfter(re, hay){
+      const rx = new RegExp(re.source + "[^\\d]{0,200}(\\d[\\d\\s]*)", re.flags);
+      const m = hay.match(rx);
+      return m ? numberize(m[1]) : null;
     }
 
-    let j=i+1;
-    while(j<lines.length && j<i+18){
-      const ln = lines[j];
-      if(isBranchHeader(ln)) break;
-      for(const sp of STATUS_PATTERNS){
-        const prev = lines[j-1] || "";
-        const next = lines[j+1] || "";
-        const mergedPrev = prev + " " + ln;
-        const mergedNext = ln + " " + next;
-        if(sp.re.test(ln) || sp.re.test(mergedNext) || sp.re.test(mergedPrev)){
-          const value = findNumberNear(lines, j, 2, 2);
-          if(value>0){
-            const obj = branches.get(branchName);
-            if(!obj.statuses[sp.key] || obj.statuses[sp.key]===0){
-              obj.statuses[sp.key] = value;
-            }
+    // Ищем все статусы по устойчивым шаблонам в сегменте + "подстраховка" по строкам
+    for(const sp of STATUS_PATTERNS){
+      let v = numAfter(sp.re, segText);
+      if(v === null){
+        // подстраховка: просмотр по строкам сегмента, иногда число на следующей строке
+        for(let j=start+1;j<end;j++){
+          const l0 = lines[j]||"", l1 = lines[j+1]||"";
+          if(sp.re.test(l0) || sp.re.test(l1)){
+            // число в той же строке или на следующей
+            let cap = (l0.match(/(\d[\d\s]*)/g)||[]).pop();
+            if(!cap) cap = (l1.match(/(\d[\d\s]*)/g)||[]).pop();
+            if(cap){ v = numberize(cap); break; }
           }
         }
       }
-      j++;
+      if(v !== null) data.statuses[sp.key] = v;
     }
+
+    branches.set(branchName, data);
   }
 
-  for(const b of BRANCHES){ if(!branches.has(b)) branches.set(b,{total:0,statuses:{}}); }
+  // Гарантируем все филиалы
+  for(const b of BRANCHES){ if(!branches.has(b)) branches.set(b, { total:0, statuses:{} }); }
 
+  // Итоги по стадиям
   const stages = {};
-  for(const v of branches.values()){
-    for(const [k,val] of Object.entries(v.statuses)) stages[k]=(stages[k]||0)+val;
-  }
-
-  const lines2 = text.split("\n").filter(Boolean);
-  const pageStageTotals = {};
-  for(let idx=0; idx<lines2.length; idx++){
-    for(const sp of STATUS_PATTERNS){
-      const prev = lines2[idx-1] || "";
-      const curr = lines2[idx];
-      const next = lines2[idx+1] || "";
-      const mergedPrev = prev + " " + curr;
-      const mergedNext = curr + " " + next;
-      if(sp.re.test(curr) || sp.re.test(mergedPrev) || sp.re.test(mergedNext)){
-        const v = findNumberNear(lines2, idx, 2, 2);
-        pageStageTotals[sp.key] = Math.max(pageStageTotals[sp.key]||0, v);
-      }
+  for(const [_, obj] of branches){
+    for(const [k,v] of Object.entries(obj.statuses)){
+      stages[k] = (stages[k]||0) + (v||0);
     }
   }
-  for(const k of Object.keys(pageStageTotals)){
-    if((stages[k]||0)===0 && pageStageTotals[k]>0){
-      stages[k] = pageStageTotals[k];
-    }
-  }
-
   const overall = [...branches.values()].reduce((s,r)=>s+(r.total||0),0);
   return { branches, overall, stages };
 }
@@ -425,7 +409,7 @@ function parseReportByPages(pages){
   };
 }
 
-/* ===== Динамика (Δ) ===== */
+/* ===== Динамика ===== */
 function computeDynamics(curr, prev){
   const dyn = {
     in_work_total: (curr.p1.totals.in_work_total - prev.p1.totals.in_work_total) || 0,
@@ -438,36 +422,51 @@ function computeDynamics(curr, prev){
   const makeRows = (cPage, pPage) => BRANCHES.map(b=>{
     const c = cPage.branches.get(b)?.total || 0;
     const p = pPage.branches.get(b)?.total || 0;
-    return {b, p, c, d: (c - p)};
+    return {b, p, c, d: (c - p)}; // строго ТЕК − ПРЕД
   });
 
   const branchRows   = makeRows(curr.p2, prev.p2);
   const branchRowsS3 = makeRows(curr.p3, prev.p3);
   const branchRowsS4 = makeRows(curr.p4, prev.p4);
 
-  const title = k => (STATUS_PATTERNS.find(s=>s.key===k)||{}).title||k;
+  // агрегаты по стадиям (итого)
   const allKeys = Array.from(new Set([
     ...Object.keys(prev.p2.stages||{}), ...Object.keys(curr.p2.stages||{}),
     ...Object.keys(prev.p3.stages||{}), ...Object.keys(curr.p3.stages||{}),
     ...Object.keys(prev.p4.stages||{}), ...Object.keys(curr.p4.stages||{}),
-    ...STATUS_PATTERNS.map(s=>s.key)
+    ...STATUS_KEYS
   ]));
   const diffStages = (cur, prv) => allKeys.map(k=>({
-    stage: title(k), key: k,
+    stage: STAGE_TITLE(k), key: k,
     p: prv[k] || 0,
     c: cur[k] || 0,
     d: (cur[k]||0) - (prv[k]||0)
   }));
 
   const stagesS2 = diffStages(curr.p2.stages||{}, prev.p2.stages||{});
-  const stagesS3 = diffStages(curr.p3.stages||{}, prev.p3.stages||{});
   const stagesS4 = diffStages(curr.p4.stages||{}, prev.p4.stages||{});
+
+  // динамика статусов в разрезе филиалов — ТОЛЬКО стр.2
+  function perBranchStages(cPage, pPage){
+    return BRANCHES.map(b=>{
+      const cst = cPage.branches.get(b)?.statuses || {};
+      const pst = pPage.branches.get(b)?.statuses || {};
+      const by = {};
+      STATUS_KEYS.forEach(k=>{
+        const p = pst[k]||0, c = cst[k]||0;
+        by[k] = {p,c,d:c-p};
+      });
+      return {b, by};
+    });
+  }
+  const s2BranchStages = perBranchStages(curr.p2, prev.p2);
 
   return {
     ...dyn,
     branchRows, branchRowsS3, branchRowsS4,
-    rtkRows: branchRowsS4,
-    stagesS2, stagesS3, stagesS4
+    stagesS2, stagesS4,
+    s2BranchStages,
+    rtkRows: branchRowsS4
   };
 }
 
@@ -574,40 +573,7 @@ function renderStagesTables(dyn){
   fill("#tblStagesS4", dyn.stagesS4);
 }
 
-/* ===== Показать все стадии ===== */
-function expandAllStages(rows){
-  const byKey = new Map((rows||[]).map(r => [r.key, r]));
-  return STATUS_PATTERNS.map(sp => {
-    const r = byKey.get(sp.key) || {key: sp.key, stage: sp.title, p: 0, c: 0, d: 0};
-    return { ...r, stage: sp.title };
-  });
-}
-
-/* ===== Презентация (HTML/PDF) ===== */
-function stageTbl(title, arr){
-  return `
-    <div style="margin:8px 0 4px;font-weight:700">${title}</div>
-    <table style="width:100%;border-collapse:collapse;font-size:11px">
-      <thead><tr>
-        <th style="text-align:left;border-bottom:1px solid #e7edf5;padding:4px">Стадия</th>
-        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:4px">Пред.</th>
-        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:4px">Тек.</th>
-        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:4px">Δ</th>
-      </tr></thead>
-      <tbody>
-        ${arr.map(r => {
-          const p=Number(r.p)||0,c=Number(r.c)||0,d=c-p;
-          return `<tr>
-            <td style="padding:4px">${r.stage}</td>
-            <td style="padding:4px;text-align:right">${fmt(p)}</td>
-            <td style="padding:4px;text-align:right">${fmt(c)}</td>
-            <td style="padding:4px;text-align:right;color:${d>0?'#0a7a2d':(d<0?'#b00020':'#5f6b7a')}">${d>0?'+':''}${fmt(d)}</td>
-          </tr>`;
-        }).join("")}
-      </tbody>
-    </table>`;
-}
-
+/* ===== Печать / презентация ===== */
 function presTableHTML(title, rows, sumIds){
   return `
     <div style="font-weight:700;margin:8px 0">${title}</div>
@@ -640,6 +606,60 @@ function presTableHTML(title, rows, sumIds){
     </table>`;
 }
 
+function stageMatrixHTML(title, branchStages){
+  const cols = STATUS_KEYS;
+  const head = cols.map(k=>`<th style="text-align:right;border-bottom:1px solid #e7edf5;padding:4px">${STAGE_TITLE(k)}</th>`).join("");
+  let totals = {}; cols.forEach(k=>totals[k]=0);
+
+  const body = branchStages.map(row=>{
+    const cells = cols.map(k=>{
+      const d = (row.by[k]?.d)||0;
+      totals[k]+=d;
+      return `<td style="padding:4px;text-align:right;color:${d>0?'#0a7a2d':(d<0?'#b00020':'#5f6b7a')}">${d>0?'+':''}${fmt(d)}</td>`;
+    }).join("");
+    return `<tr><td style="padding:4px">${row.b}</td>${cells}</tr>`;
+  }).join("");
+
+  const totalRow = `<tr>
+    <td style="padding:4px;font-weight:800">Итого Δ</td>
+    ${cols.map(k=>`<td style="padding:4px;text-align:right;font-weight:800;color:${totals[k]>0?'#0a7a2d':(totals[k]<0?'#b00020':'#5f6b7a')}">${totals[k]>0?'+':''}${fmt(totals[k])}</td>`).join("")}
+  </tr>`;
+
+  return `
+    <div style="font-weight:700;margin:8px 0">${title}</div>
+    <div style="overflow:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:860px">
+        <thead><tr><th style="text-align:left;border-bottom:1px solid #e7edf5;padding:4px">Филиал</th>${head}</tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot>${totalRow}</tfoot>
+      </table>
+    </div>`;
+}
+
+function stageTotalsHTML(title, totalsArray){
+  return `
+    <div style="margin:6px 0 4px;font-weight:700">${title}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr>
+        <th style="text-align:left;border-bottom:1px solid #e7edf5;padding:4px">Стадия</th>
+        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:4px">Пред.</th>
+        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:4px">Тек.</th>
+        <th style="text-align:right;border-bottom:1px solid #e7edf5;padding:4px">Δ</th>
+      </tr></thead>
+      <tbody>
+        ${totalsArray.map(r=>{
+          const p=Number(r.p)||0,c=Number(r.c)||0,d=c-p;
+          return `<tr>
+            <td style="padding:4px">${r.stage}</td>
+            <td style="padding:4px;text-align:right">${fmt(p)}</td>
+            <td style="padding:4px;text-align:right">${fmt(c)}</td>
+            <td style="padding:4px;text-align:right;color:${d>0?'#0a7a2d':(d<0?'#b00020':'#5f6b7a')}">${d>0?'+':''}${fmt(d)}</td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>`;
+}
+
 function buildPresentationHTML(curr, prev, dyn){
   document.getElementById("presDates").textContent = `Пред.: ${prev.date} · Тек.: ${curr.date}`;
 
@@ -669,24 +689,15 @@ function buildPresentationHTML(curr, prev, dyn){
     return { b: t[0].textContent, p: numberize(t[1].textContent), c: numberize(t[2].textContent), d: numberize(t[3].textContent) };
   });
   document.getElementById("presTable").innerHTML = presTableHTML("Динамика по филиалам (всего)", rowsS2, ["sumPrev","sumCurr","sumDelta"]);
+  document.getElementById("presTableS3").innerHTML = presTableHTML("Динамика выявления по 425 Приказу", (DATA?.dyn?.branchRowsS3||[]), ["sumPrevS3","sumCurrS3","sumDeltaS3"]);
+  document.getElementById("presTableS4").innerHTML = presTableHTML("Динамика выявления по Ростелекому", (DATA?.dyn?.branchRowsS4||[]), ["sumPrevS4","sumCurrS4","sumDeltaS4"]);
 
-  const rowsS3 = (DATA?.dyn?.branchRowsS3||[]);
-  document.getElementById("presTableS3").innerHTML = presTableHTML("Динамика выявления по 425 Приказу", rowsS3, ["sumPrevS3","sumCurrS3","sumDeltaS3"]);
-
-  const rowsS4 = (DATA?.dyn?.branchRowsS4||[]);
-  document.getElementById("presTableS4").innerHTML = presTableHTML("Динамика выявления по Ростелекому", rowsS4, ["sumPrevS4","sumCurrS4","sumDeltaS4"]);
-
-  const s2all = expandAllStages(dyn.stagesS2);
-  const s3all = expandAllStages(dyn.stagesS3);
-  const s4all = expandAllStages(dyn.stagesS4);
-
-  document.getElementById("presStages").innerHTML =
-    stageTbl("Стадии — Динамика по филиалам (всего)", s2all) +
-    stageTbl("Стадии — Динамика выявления по 425 Приказу", s3all) +
-    stageTbl("Стадии — Динамика выявления по Ростелекому", s4all);
+  // Последний слайд: только стр.2 — матрица Δ по филиалам + суммарные итоги по статусам
+  const s2Matrix = stageMatrixHTML("Динамика статусов по филиалам (стр. 2, Δ)", dyn.s2BranchStages);
+  const s2Totals = stageTotalsHTML("Стр. 2 — Итого по статусам", dyn.stagesS2);
+  document.getElementById("presStages").innerHTML = s2Matrix + s2Totals;
 }
 
-/* ===== Выжимка (HTML/PDF) ===== */
 function buildSummaryBlocks(curr, prev, dyn){
   const blocks = document.getElementById("briefBlocks");
   const eff = (curr.p1.totals.legalized + curr.p1.totals.dismantled_ytd) - (prev.p1.totals.legalized + prev.p1.totals.dismantled_ytd);
@@ -713,22 +724,10 @@ function buildSummaryBlocks(curr, prev, dyn){
     <h3>Динамика выявления по Ростелекому</h3>
     <div>${listAll(dyn.branchRowsS4 || [])}</div>
     <div style="margin-top:6px"><b>Итого:</b> Пред. ${document.getElementById("sumPrevS4").textContent}; Тек. ${document.getElementById("sumCurrS4").textContent}; Δ ${document.getElementById("sumDeltaS4").textContent}</div>
-    <hr/>
-    <h3>Стадии — Динамика выявления по 425 Приказу</h3>
-    <div>${expandAllStages(dyn.stagesS3||[]).map(s=>{
-      const p=Number(s.p)||0,c=Number(s.c)||0,d=c-p;
-      return `• ${s.stage}: ${fmt(p)} → <b>${fmt(c)}</b> (${d>0?'+':''}${fmt(d)})`;
-    }).join("<br/>")}</div>
-    <hr/>
-    <h3>Стадии — Динамика выявления по Ростелекому</h3>
-    <div>${expandAllStages(dyn.stagesS4||[]).map(s=>{
-      const p=Number(s.p)||0,c=Number(s.c)||0,d=c-p;
-      return `• ${s.stage}: ${fmt(p)} → <b>${fmt(c)}</b> (${d>0?'+':''}${fmt(d)})`;
-    }).join("<br/>")}</div>
   `;
 }
 
-/* ===== Google Sheets: вставка таблицы «План-Факт» ===== */
+/* ===== Google Sheets: «План-Факт» (как есть) ===== */
 const SHEET_HTML_URL = "https://docs.google.com/spreadsheets/d/1Y9bM7zLRf_gonMUgfQLl57Iu3NgPa78rBXnpxkKLvO0/gviz/tq?tqx=out:html";
 async function injectPlanFactHTML(){
   try{
@@ -738,7 +737,7 @@ async function injectPlanFactHTML(){
     const tmp = document.createElement("div");
     tmp.innerHTML = html;
     const table = tmp.querySelector("table");
-    if(!table){ throw new Error("Таблица не найдена в HTML ответе."); }
+    if(!table) throw new Error("Таблица не найдена в HTML.");
     const caption = `<div style="font-weight:700;margin:6px 0 4px">План-Факт</div>`;
     document.getElementById("presPlanFactInner").innerHTML = caption + table.outerHTML;
     document.getElementById("briefPlanFactInner").innerHTML = caption + table.outerHTML;
@@ -750,7 +749,7 @@ async function injectPlanFactHTML(){
   }
 }
 
-/* ===== Экспорт ===== */
+/* ===== Экспорт PDF ===== */
 async function exportPresPDF(){
   const el = document.getElementById("presentationPrint");
   el.style.display = "block";
@@ -778,7 +777,7 @@ async function exportBriefPDF(){
   el.style.display = "none";
 }
 
-/* ===== PPTX / DOCX (оставлено, фразы «н/н» убраны) ===== */
+/* ===== PPTX / DOCX (без изменений требований) ===== */
 async function exportPresPPTX(curr, prev, dyn, rows){
   try {
     const pptx = new PptxGenJS();
@@ -897,7 +896,7 @@ async function exportBriefDOCX(curr, prev, dyn, rows){
   }
 }
 
-/* ===== Работа интерфейса ===== */
+/* ===== Инициализация ===== */
 let DATA = null;
 
 document.getElementById("btnParse").addEventListener("click", async () => {
@@ -950,7 +949,7 @@ document.getElementById("exportPresPPTX").addEventListener("click", async () => 
   const rows = Array.from(document.querySelectorAll("#tblBranches tbody tr")).map(tr => {
     const t = tr.querySelectorAll("td");
     return { b: t[0].textContent, p: numberize(t[1].textContent), c: numberize(t[2].textContent), d: numberize(t[3].textContent) };
-    });
+  });
   await exportPresPPTX(DATA.curr, DATA.prev, DATA.dyn, rows);
 });
 document.getElementById("exportBriefDOCX").addEventListener("click", async () => {
