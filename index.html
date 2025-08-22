@@ -836,108 +836,221 @@
     const rtkShare = curr.p1.totals.in_work_total ? 
                      (curr.p1.totals.rtk_in_work / curr.p1.totals.in_work_total * 100) : 0;
     
-    const wordHTML = `<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+    // Создаем HTML документ, который откроется в любом текстовом редакторе
+    const htmlDoc = `<!DOCTYPE html>
+<html>
 <head>
   <meta charset="utf-8">
-  <title>Отчет ВОЛС</title>
-  <!--[if gte mso 9]>
-  <xml>
-    <w:WordDocument>
-      <w:View>Print</w:View>
-      <w:Zoom>100</w:Zoom>
-      <w:DoNotOptimizeForBrowser/>
-    </w:WordDocument>
-  </xml>
-  <![endif]-->
+  <title>Отчет ВОЛС - ${curr.date}</title>
   <style>
-    @page { size: A4; margin: 2cm; }
-    body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; color: #000; }
-    h1 { font-size: 18pt; color: #0033A0; margin: 20pt 0 10pt 0; }
-    h2 { font-size: 14pt; color: #0033A0; margin: 15pt 0 8pt 0; }
-    h3 { font-size: 12pt; font-weight: bold; margin: 10pt 0 5pt 0; }
-    p { margin: 0 0 10pt 0; }
-    table { border-collapse: collapse; width: 100%; margin: 10pt 0; }
-    th, td { border: 1px solid #000; padding: 5pt; text-align: left; }
-    th { background-color: #f0f0f0; font-weight: bold; }
-    .highlight { background-color: #ffff99; }
-    .positive { color: #0a7a2d; }
-    .negative { color: #b00020; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 { color: #0033A0; border-bottom: 2px solid #0033A0; padding-bottom: 10px; }
+    h2 { color: #0033A0; margin-top: 30px; }
+    h3 { color: #333; margin-top: 20px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #0033A0;
+      color: white;
+      font-weight: bold;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    .positive { color: #0a7a2d; font-weight: bold; }
+    .negative { color: #b00020; font-weight: bold; }
+    .info-box {
+      background-color: #f0f4f8;
+      border-left: 4px solid #0033A0;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    ul { margin: 10px 0; }
+    li { margin: 5px 0; }
+    strong { color: #0033A0; }
+    .summary { font-size: 1.1em; }
+    @media print {
+      body { margin: 0; padding: 10px; }
+      h1, h2, h3 { page-break-after: avoid; }
+      table { page-break-inside: avoid; }
+    }
   </style>
 </head>
 <body>
-  <h1>АО «Россети Кубань» — ВОЛС</h1>
-  <h2>Краткая выжимка (неделя к неделе)</h2>
-  <p><strong>Период:</strong> Предыдущий: ${prev.date} · Текущий: ${curr.date}</p>
+  <h1>АО «Россети Кубань» — Отчет по ВОЛС</h1>
   
-  <h3>Основные показатели</h3>
-  <ul>
-    <li>В работе всего: <strong>${fmt(curr.p1.totals.in_work_total)}</strong> (${dyn.in_work_total > 0 ? '+' : ''}${fmt(dyn.in_work_total)})</li>
-    <li>Выявлено за неделю: <strong>${fmt(dyn.found_week)}</strong></li>
-    <li>Закрыто за неделю (узак.+демонт.): <strong>${fmt(eff)}</strong></li>
-    <li>ПАО «Ростелеком» в работе: <strong>${fmt(curr.p1.totals.rtk_in_work)}</strong> (${dyn.rtk_in_work > 0 ? '+' : ''}${fmt(dyn.rtk_in_work)}), доля: ${rtkShare.toFixed(1)}%</li>
-  </ul>
+  <div class="info-box">
+    <p><strong>Отчетный период:</strong><br>
+    Предыдущая неделя: ${prev.date}<br>
+    Текущая неделя: ${curr.date}</p>
+  </div>
   
-  <h3>Динамика по филиалам (всего)</h3>
+  <h2>Основные показатели</h2>
+  
+  <div class="summary">
+    <ul>
+      <li>В работе всего: <strong>${fmt(curr.p1.totals.in_work_total)}</strong> шт. 
+          <span class="${dyn.in_work_total >= 0 ? 'positive' : 'negative'}">
+            (${dyn.in_work_total > 0 ? '+' : ''}${fmt(dyn.in_work_total)})
+          </span>
+      </li>
+      <li>Выявлено за неделю: <strong>${fmt(dyn.found_week)}</strong> шт.</li>
+      <li>Закрыто за неделю (узаконено + демонтировано): <strong>${fmt(eff)}</strong> шт.</li>
+      <li>ПАО «Ростелеком» в работе: <strong>${fmt(curr.p1.totals.rtk_in_work)}</strong> шт. 
+          <span class="${dyn.rtk_in_work >= 0 ? 'positive' : 'negative'}">
+            (${dyn.rtk_in_work > 0 ? '+' : ''}${fmt(dyn.rtk_in_work)})
+          </span>
+          <br>Доля от общего количества: <strong>${rtkShare.toFixed(1)}%</strong>
+      </li>
+    </ul>
+  </div>
+  
+  <h2>Динамика по филиалам</h2>
+  
+  <h3>Общая динамика (все операторы)</h3>
   <table>
     <thead>
-      <tr><th>Филиал</th><th>Предыдущая</th><th>Текущая</th><th>Изменение</th></tr>
+      <tr>
+        <th>Филиал</th>
+        <th>Предыдущая неделя</th>
+        <th>Текущая неделя</th>
+        <th>Изменение</th>
+      </tr>
     </thead>
     <tbody>
-      ${dyn.branchRows.map(r => `<tr>
+      ${dyn.branchRows.map(r => `
+      <tr>
         <td>${r.b}</td>
-        <td>${fmt(r.p)}</td>
-        <td>${fmt(r.c)}</td>
-        <td class="${r.d > 0 ? 'positive' : r.d < 0 ? 'negative' : ''}">${r.d > 0 ? '+' : ''}${fmt(r.d)}</td>
+        <td style="text-align: center;">${fmt(r.p)}</td>
+        <td style="text-align: center;">${fmt(r.c)}</td>
+        <td style="text-align: center;" class="${r.d > 0 ? 'positive' : r.d < 0 ? 'negative' : ''}">
+          ${r.d > 0 ? '+' : ''}${fmt(r.d)}
+        </td>
       </tr>`).join('')}
     </tbody>
     <tfoot>
-      <tr>
-        <th>Итого</th>
-        <th>${document.getElementById("sumPrev").textContent}</th>
-        <th>${document.getElementById("sumCurr").textContent}</th>
-        <th>${document.getElementById("sumDelta").textContent}</th>
+      <tr style="font-weight: bold; background-color: #f0f0f0;">
+        <td>ИТОГО</td>
+        <td style="text-align: center;">${document.getElementById("sumPrev").textContent}</td>
+        <td style="text-align: center;">${document.getElementById("sumCurr").textContent}</td>
+        <td style="text-align: center;">${document.getElementById("sumDelta").textContent}</td>
       </tr>
     </tfoot>
   </table>
   
-  <h3>Динамика выявления по 425 Приказу</h3>
+  <h3>Динамика выявления по Приказу №425</h3>
   <table>
     <thead>
-      <tr><th>Филиал</th><th>Предыдущая</th><th>Текущая</th><th>Изменение</th></tr>
+      <tr>
+        <th>Филиал</th>
+        <th>Предыдущая неделя</th>
+        <th>Текущая неделя</th>
+        <th>Изменение</th>
+      </tr>
     </thead>
     <tbody>
-      ${(dyn.branchRowsS3 || []).map(r => `<tr>
+      ${(dyn.branchRowsS3 || []).map(r => `
+      <tr>
         <td>${r.b}</td>
-        <td>${fmt(r.p)}</td>
-        <td>${fmt(r.c)}</td>
-        <td class="${r.d > 0 ? 'positive' : r.d < 0 ? 'negative' : ''}">${r.d > 0 ? '+' : ''}${fmt(r.d)}</td>
+        <td style="text-align: center;">${fmt(r.p)}</td>
+        <td style="text-align: center;">${fmt(r.c)}</td>
+        <td style="text-align: center;" class="${r.d > 0 ? 'positive' : r.d < 0 ? 'negative' : ''}">
+          ${r.d > 0 ? '+' : ''}${fmt(r.d)}
+        </td>
+      </tr>`).join('')}
+    </tbody>
+    <tfoot>
+      <tr style="font-weight: bold; background-color: #f0f0f0;">
+        <td>ИТОГО</td>
+        <td style="text-align: center;">${document.getElementById("sumPrevS3").textContent}</td>
+        <td style="text-align: center;">${document.getElementById("sumCurrS3").textContent}</td>
+        <td style="text-align: center;">${document.getElementById("sumDeltaS3").textContent}</td>
+      </tr>
+    </tfoot>
+  </table>
+  
+  <h3>Динамика по ПАО «Ростелеком»</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Филиал</th>
+        <th>Предыдущая неделя</th>
+        <th>Текущая неделя</th>
+        <th>Изменение</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${(dyn.branchRowsS4 || []).map(r => `
+      <tr>
+        <td>${r.b}</td>
+        <td style="text-align: center;">${fmt(r.p)}</td>
+        <td style="text-align: center;">${fmt(r.c)}</td>
+        <td style="text-align: center;" class="${r.d > 0 ? 'positive' : r.d < 0 ? 'negative' : ''}">
+          ${r.d > 0 ? '+' : ''}${fmt(r.d)}
+        </td>
+      </tr>`).join('')}
+    </tbody>
+    <tfoot>
+      <tr style="font-weight: bold; background-color: #f0f0f0;">
+        <td>ИТОГО</td>
+        <td style="text-align: center;">${document.getElementById("sumPrevS4").textContent}</td>
+        <td style="text-align: center;">${document.getElementById("sumCurrS4").textContent}</td>
+        <td style="text-align: center;">${document.getElementById("sumDeltaS4").textContent}</td>
+      </tr>
+    </tfoot>
+  </table>
+  
+  <h2>Динамика по статусам</h2>
+  
+  <table>
+    <thead>
+      <tr>
+        <th>Статус</th>
+        <th>Предыдущая неделя</th>
+        <th>Текущая неделя</th>
+        <th>Изменение</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${(dyn.stagesS2 || []).map(r => `
+      <tr>
+        <td>${r.stage}</td>
+        <td style="text-align: center;">${fmt(r.p)}</td>
+        <td style="text-align: center;">${fmt(r.c)}</td>
+        <td style="text-align: center;" class="${r.d > 0 ? 'positive' : r.d < 0 ? 'negative' : ''}">
+          ${r.d > 0 ? '+' : ''}${fmt(r.d)}
+        </td>
       </tr>`).join('')}
     </tbody>
   </table>
   
-  <h3>Динамика выявления по Ростелекому</h3>
-  <table>
-    <thead>
-      <tr><th>Филиал</th><th>Предыдущая</th><th>Текущая</th><th>Изменение</th></tr>
-    </thead>
-    <tbody>
-      ${(dyn.branchRowsS4 || []).map(r => `<tr>
-        <td>${r.b}</td>
-        <td>${fmt(r.p)}</td>
-        <td>${fmt(r.c)}</td>
-        <td class="${r.d > 0 ? 'positive' : r.d < 0 ? 'negative' : ''}">${r.d > 0 ? '+' : ''}${fmt(r.d)}</td>
-      </tr>`).join('')}
-    </tbody>
-  </table>
+  <div class="info-box" style="margin-top: 30px;">
+    <p><strong>Примечание:</strong> Данный отчет сформирован автоматически на основе загруженных PDF-файлов.</p>
+    <p>Дата формирования: ${new Date().toLocaleDateString('ru-RU')}</p>
+  </div>
 </body>
 </html>`;
     
-    const blob = new Blob([wordHTML], {type: 'application/msword'});
+    // Сохраняем как HTML файл, который откроется в любом браузере или Word
+    const blob = new Blob([htmlDoc], {type: 'text/html; charset=utf-8'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Отчет_ВОЛС_${curr.date.replace(/\./g, '-')}.doc`;
+    a.download = `Отчет_ВОЛС_${curr.date.replace(/\./g, '-')}.html`;
     document.body.appendChild(a);
     a.click();
     setTimeout(() => {
@@ -945,7 +1058,7 @@
       a.remove();
     }, 0);
     
-    document.getElementById("exportStatus").textContent = "Word файл сохранен (откройте в MS Word).";
+    document.getElementById("exportStatus").textContent = "HTML отчет сохранен. Откройте в браузере или Word.";
   }
   
   /* ===== Экспорт презентации в HTML ===== */
